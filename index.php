@@ -5,18 +5,25 @@ if (!file_exists('includes/config.php')) {
 }
 require_once 'includes/header.php';
 
-$header_ad = getAd($conn, 'header_top');
-$mid_ad = getAd($conn, 'mid_content');
-$footer_ad = getAd($conn, 'result_footer');
+$header_ads = getAdsByLocation($conn, 'header_text_link');
+$body_text_ads = getAdsByLocation($conn, 'body_text_link');
+$body_image_ads = getAdsByLocation($conn, 'body_image');
 
 // Fetch last 10 predictions
 $last_predictions = $conn->query("SELECT * FROM prediction_cache ORDER BY created_at DESC LIMIT 10");
 ?>
 
 <div class="max-w-5xl mx-auto px-4 py-12 md:py-20">
-    <!-- Ad Slot: Header Top -->
-    <?php if ($header_ad): ?>
-        <div class="mb-12 flex justify-center"><?php echo $header_ad; ?></div>
+    <!-- Ad Slot: Header Text Links -->
+    <?php if ($header_ads->num_rows > 0): ?>
+        <div class="mb-12 flex flex-wrap justify-center gap-6">
+            <?php while($ad = $header_ads->fetch_assoc()): ?>
+                <a href="<?php echo htmlspecialchars($ad['anchor_link']); ?>" target="_blank" class="text-emerald-600 font-bold hover:text-emerald-500 transition-all text-sm bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-full border border-emerald-100 dark:border-emerald-800/50">
+                    <i class="fas fa-external-link-alt mr-2 text-[10px]"></i>
+                    <?php echo htmlspecialchars($ad['anchor_text'] ?: 'Visit Partner'); ?>
+                </a>
+            <?php endwhile; ?>
+        </div>
     <?php endif; ?>
 
     <!-- Header -->
@@ -79,9 +86,40 @@ $last_predictions = $conn->query("SELECT * FROM prediction_cache ORDER BY create
         </form>
     </div>
 
-    <!-- Ad Slot: Mid Content -->
-    <?php if ($mid_ad): ?>
-        <div class="mb-12 flex justify-center"><?php echo $mid_ad; ?></div>
+    <!-- Ad Slot: Body Image Ads (Beautiful Section) -->
+    <?php if ($body_image_ads->num_rows > 0): ?>
+        <div class="mb-16">
+            <div class="flex items-center gap-4 mb-6">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Featured Partners</span>
+                <div class="h-px bg-slate-100 dark:bg-slate-800 flex-1"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <?php while($ad = $body_image_ads->fetch_assoc()): ?>
+                    <a href="<?php echo htmlspecialchars($ad['anchor_link']); ?>" target="_blank" class="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500">
+                        <img src="<?php echo htmlspecialchars($ad['image_url']); ?>" alt="Ad" class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                            <span class="text-white font-bold flex items-center gap-2">
+                                Learn More <i class="fas fa-arrow-right text-xs"></i>
+                            </span>
+                        </div>
+                    </a>
+                <?php endwhile; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Ad Slot: Body Text Links -->
+    <?php if ($body_text_ads->num_rows > 0): ?>
+        <div class="mb-12 p-8 bg-slate-50 dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center">
+            <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Recommended for you</h4>
+            <div class="flex flex-wrap justify-center gap-4">
+                <?php while($ad = $body_text_ads->fetch_assoc()): ?>
+                    <a href="<?php echo htmlspecialchars($ad['anchor_link']); ?>" target="_blank" class="px-6 py-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-500 border border-transparent transition-all text-slate-700 dark:text-slate-300 font-bold">
+                        <?php echo htmlspecialchars($ad['anchor_text']); ?>
+                    </a>
+                <?php endwhile; ?>
+            </div>
+        </div>
     <?php endif; ?>
 
     <!-- Last 10 Match Forecasts -->
@@ -137,10 +175,7 @@ $last_predictions = $conn->query("SELECT * FROM prediction_cache ORDER BY create
         </div>
     </div>
 
-    <!-- Ad Slot: Result Footer -->
-    <?php if ($footer_ad): ?>
-        <div class="mt-12 flex justify-center"><?php echo $footer_ad; ?></div>
-    <?php endif; ?>
+    <!-- Ad Slot: Result Footer Links (Handled in includes/footer.php mostly, but keeping slot here if needed) -->
 </div>
 
 <!-- Floating WhatsApp Icon -->

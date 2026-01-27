@@ -10,18 +10,32 @@ function getSeoSettings($conn) {
     return $result->fetch_assoc();
 }
 
-function getAd($conn, $slot_name) {
-    $settings = getSettings($conn);
-    if (!empty($settings['ad_expiry_date']) && strtotime($settings['ad_expiry_date']) < time()) {
-        return null;
-    }
-
-    $stmt = $conn->prepare("SELECT ad_code FROM ads WHERE slot_name = ? AND is_active = 1");
-    $stmt->bind_param("s", $slot_name);
+function getAdsByLocation($conn, $location) {
+    $now = date('Y-m-d');
+    $stmt = $conn->prepare("SELECT * FROM ads WHERE location = ? AND is_active = 1 AND (expiry_date IS NULL OR expiry_date >= ?)");
+    $stmt->bind_param("ss", $location, $now);
     $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        return $row['ad_code'];
+    return $stmt->get_result();
+}
+
+function getAd($conn, $slot_name) {
+    // Mapping old slot names to new locations for backward compatibility
+    $mapping = [
+        'header_top' => 'header_text_link',
+        'mid_content' => 'body_text_link',
+        'result_footer' => 'footer_link'
+    ];
+
+    $location = $mapping[$slot_name] ?? $slot_name;
+
+    $ads = getAdsByLocation($conn, $location);
+    if ($ad = $ads->fetch_assoc()) {
+        if ($ad['position'] == 'image') {
+            return '<a href="'.htmlspecialchars($ad['anchor_link']).'" target="_blank"><img src="'.htmlspecialchars($ad['image_url']).'" alt="Ad"></a>';
+        } elseif (!empty($ad['anchor_link']) && !empty($ad['anchor_text'])) {
+            return '<a href="'.htmlspecialchars($ad['anchor_link']).'" target="_blank" class="text-emerald-600 font-bold hover:underline">'.htmlspecialchars($ad['anchor_text']).'</a>';
+        }
+        return $ad['ad_code'];
     }
     return '';
 }
@@ -85,6 +99,27 @@ function ensureDatabaseTablesExist($conn) {
     $conn->query("CREATE TABLE IF NOT EXISTS `news` (`id` INT AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(255) NOT NULL, `content` LONGTEXT, `image_url` VARCHAR(255), `source` VARCHAR(100), `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY `news_title` (`title`)) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `daily_usage` (`id` INT AUTO_INCREMENT PRIMARY KEY, `identifier` VARCHAR(255) NOT NULL, `usage_count` INT DEFAULT 0, `last_usage_date` DATE, UNIQUE KEY `daily_usage_idx` (`identifier`, `last_usage_date`)) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `sessions` (`id` VARCHAR(128) NOT NULL PRIMARY KEY, `data` MEDIUMTEXT NOT NULL, `last_access` INT(11) NOT NULL) $charset");
+
+    // Update ads table
+    $conn->query("CREATE TABLE IF NOT EXISTS `ads` (`id` INT AUTO_INCREMENT PRIMARY KEY, `slot_name` VARCHAR(50) UNIQUE, `ad_code` TEXT, `is_active` BOOLEAN DEFAULT TRUE) $charset");
+
+    $ad_columns = [
+        'position' => "VARCHAR(50)",
+        'location' => "VARCHAR(50)",
+        'anchor_link' => "VARCHAR(255)",
+        'anchor_text' => "VARCHAR(255)",
+        'price' => "DECIMAL(10,2)",
+        'expiry_date' => "DATE",
+        'client_contact' => "VARCHAR(255)",
+        'image_url' => "VARCHAR(255)"
+    ];
+
+    foreach ($ad_columns as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `ads` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `ads` ADD `$col` $def");
+        }
+    }
 }
 
 ?>
