@@ -42,10 +42,14 @@ require_once 'includes/header.php';
 document.getElementById('login-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
+    const params = new URLSearchParams(formData);
 
     fetch('api/user_auth.php?action=login', {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
     })
     .then(res => res.json())
     .then(data => {

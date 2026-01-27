@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
+ensureDatabaseTablesExist($conn);
 require_once '../includes/session_helper.php';
 
 header('Content-Type: application/json');
@@ -55,7 +56,7 @@ if ($action === 'register') {
         $_SESSION['full_name'] = $full_name;
         echo json_encode(['success' => true, 'message' => 'Registration successful!', 'user_id' => $user_id]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Registration failed. Please try again.']);
+        echo json_encode(['success' => false, 'message' => 'Registration failed: ' . $conn->error]);
     }
 }
 

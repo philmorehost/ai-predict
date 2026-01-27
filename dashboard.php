@@ -23,7 +23,7 @@ if ($user['status'] === 'suspended') {
 require_once 'includes/header.php';
 
 // Fetch prediction history
-$history = $conn->prepare("SELECT * FROM prediction_cache WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+$history = $conn->prepare("SELECT * FROM user_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 10");
 $history->bind_param("s", $user_id);
 $history->execute();
 $history_res = $history->get_result();

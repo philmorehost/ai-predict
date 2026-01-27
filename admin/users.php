@@ -25,8 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $password_hash = password_hash($password ?: '123456', PASSWORD_DEFAULT);
                 $stmt = $conn->prepare("INSERT INTO visitors (user_id, username, full_name, email, phone, credits, status, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->bind_param("sssssdss", $user_id, $username, $full_name, $email, $phone, $credits, $status, $password_hash);
-                $stmt->execute();
-                $success = "User created successfully!";
+                if ($stmt->execute()) {
+                    $success = "User created successfully!";
+                } else {
+                    $error = "Failed to create user: " . $conn->error;
+                }
             }
         } else {
             $user_id = $_POST['user_id'];
@@ -38,8 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("UPDATE visitors SET full_name = ?, email = ?, username = ?, phone = ?, credits = ?, status = ? WHERE user_id = ?");
                 $stmt->bind_param("ssssdss", $full_name, $email, $username, $phone, $credits, $status, $user_id);
             }
-            $stmt->execute();
-            $success = "User updated successfully!";
+            if ($stmt->execute()) {
+                $success = "User updated successfully!";
+            } else {
+                $error = "Failed to update user: " . $conn->error;
+            }
         }
     }
 

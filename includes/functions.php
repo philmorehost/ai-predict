@@ -86,7 +86,7 @@ function ensureDatabaseTablesExist($conn) {
         'total_predictions' => "INT DEFAULT 0",
         'password_hash' => "VARCHAR(255)",
         'full_name' => "VARCHAR(255)",
-        'username' => "VARCHAR(100) UNIQUE",
+        'username' => "VARCHAR(100)",
         'status' => "ENUM('active', 'suspended') DEFAULT 'active'"
     ];
     foreach ($visitor_cols as $col => $def) {
@@ -145,6 +145,16 @@ function ensureDatabaseTablesExist($conn) {
     if ($check_cache && $check_cache->num_rows == 0) {
         $conn->query("ALTER TABLE `prediction_cache` ADD `user_id` VARCHAR(50) AFTER `id` ");
     }
+
+    // User History Table
+    $conn->query("CREATE TABLE IF NOT EXISTS `user_history` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` VARCHAR(50),
+        `home_team` VARCHAR(100),
+        `away_team` VARCHAR(100),
+        `result_json` LONGTEXT,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) $charset");
 }
 
 ?>
