@@ -148,7 +148,11 @@ require_once 'header.php';
                                     <i class="fas fa-sign-in-alt"></i>
                                 </button>
                             </form>
-                            <button onclick='editUser(<?php echo htmlspecialchars(json_encode($u), ENT_QUOTES, 'UTF-8'); ?>)' class="p-2 text-slate-400 hover:text-emerald-600 transition-colors" title="Edit User">
+                            <button onclick='editUser(<?php
+                                $safe_u = $u;
+                                unset($safe_u["password_hash"]);
+                                echo htmlspecialchars(json_encode($safe_u), ENT_QUOTES, 'UTF-8');
+                            ?>)' class="p-2 text-slate-400 hover:text-emerald-600 transition-colors" title="Edit User">
                                 <i class="fas fa-user-edit"></i>
                             </button>
                         </div>

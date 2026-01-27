@@ -3,6 +3,9 @@ require_once 'config.php';
 require_once 'functions.php';
 require_once 'session_helper.php';
 
+// Ensure tables exist on every page load to catch updates and handle fresh installs
+ensureDatabaseTablesExist($conn);
+
 $settings = getSettings($conn);
 $seo = getSeoSettings($conn);
 

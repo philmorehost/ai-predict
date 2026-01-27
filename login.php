@@ -42,10 +42,22 @@ require_once 'includes/header.php';
 document.getElementById('login-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+
+    if (!data.identifier || !data.password) {
+        alert("Please enter both identifier and password.");
+        return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = 'Logging in...';
 
     fetch('api/user_auth.php?action=login', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
     })
     .then(res => res.json())
     .then(data => {
@@ -54,7 +66,15 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
             window.location.href = 'dashboard.php';
         } else {
             alert(data.message);
+            btn.disabled = false;
+            btn.innerText = originalText;
         }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("A connection error occurred. Please try again.");
+        btn.disabled = false;
+        btn.innerText = originalText;
     });
 });
 

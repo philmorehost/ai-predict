@@ -1,4 +1,8 @@
 <?php
+/**
+ * User Authentication API
+ * Handles Registration, Login, and Logout
+ */
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 ensureDatabaseTablesExist($conn);
@@ -8,10 +12,19 @@ header('Content-Type: application/json');
 
 $action = $_GET['action'] ?? '';
 
-if ($action === 'register') {
-    // Handle both traditional POST and JSON
-    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+// Robust data collection
+$input = [];
+$raw_body = file_get_contents('php://input');
+if (!empty($raw_body)) {
+    $json = json_decode($raw_body, true);
+    if (is_array($json)) {
+        $input = $json;
+    }
+}
+// Merge with $_POST for traditional form submissions
+$input = array_merge($input, $_POST);
 
+if ($action === 'register') {
     $email = isset($input['email']) ? sanitize($input['email']) : '';
     $full_name = isset($input['full_name']) ? sanitize($input['full_name']) : '';
     $username = isset($input['username']) ? sanitize($input['username']) : '';
@@ -50,7 +63,7 @@ if ($action === 'register') {
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
     $user_id = 'SP-' . strtoupper(substr(md5(uniqid()), 0, 8));
 
-    $stmt = $conn->prepare("INSERT INTO visitors (user_id, email, full_name, password_hash, phone, username) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO visitors (user_id, email, full_name, password_hash, phone, username, status) VALUES (?, ?, ?, ?, ?, ?, 'active')");
     $stmt->bind_param("ssssss", $user_id, $email, $full_name, $password_hash, $phone, $username);
 
     if ($stmt->execute()) {
@@ -64,9 +77,13 @@ if ($action === 'register') {
 }
 
 if ($action === 'login') {
-    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-    $identifier = isset($input['identifier']) ? sanitize($input['identifier']) : ''; // email or user_id
+    $identifier = isset($input['identifier']) ? sanitize($input['identifier']) : '';
     $password = $input['password'] ?? '';
+
+    if (empty($identifier) || empty($password)) {
+        echo json_encode(['success' => false, 'message' => 'Please enter both your email/username and password.']);
+        exit;
+    }
 
     $stmt = $conn->prepare("SELECT * FROM visitors WHERE email = ? OR user_id = ? OR username = ?");
     $stmt->bind_param("sss", $identifier, $identifier, $identifier);
@@ -82,7 +99,7 @@ if ($action === 'login') {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['full_name'] = $user['full_name'];
-            echo json_encode(['success' => true, 'message' => 'Login successful!', 'user' => $user, 'user_id' => $user['user_id']]);
+            echo json_encode(['success' => true, 'message' => 'Login successful!', 'user' => $user]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid password.']);
         }
