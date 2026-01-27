@@ -220,7 +220,10 @@
         if (document.getElementById('nav-login-btn')) document.getElementById('nav-login-btn').classList.add('hidden');
         if (document.getElementById('user-credits')) document.getElementById('user-credits').innerText = parseFloat(activeVisitor.credits).toFixed(2);
         if (document.getElementById('user-stats-preds')) document.getElementById('user-stats-preds').innerText = activeVisitor.total_predictions || 0;
-        if (document.getElementById('user-initials')) document.getElementById('user-initials').innerText = activeVisitor.user_id.substring(3, 5);
+        if (document.getElementById('user-initials')) {
+            const initials = activeVisitor.full_name ? activeVisitor.full_name.split(' ').map(n => n[0]).join('').substring(0, 2) : activeVisitor.user_id.substring(3, 5);
+            document.getElementById('user-initials').innerText = initials.toUpperCase();
+        }
 
         // Show a stats card if they're on the homepage
         if (window.location.pathname.includes('index.php') || window.location.pathname.endsWith('/') || window.location.pathname === '' || window.location.pathname.includes('dashboard.php')) {

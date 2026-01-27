@@ -8,14 +8,20 @@ header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
 
 if ($action === 'register') {
-    $email = sanitize($_POST['email']);
-    $full_name = sanitize($_POST['full_name']);
-    $username = sanitize($_POST['username']);
-    $password = $_POST['password'];
-    $phone = sanitize($_POST['phone']);
+    $email = isset($_POST['email']) ? sanitize($_POST['email']) : '';
+    $full_name = isset($_POST['full_name']) ? sanitize($_POST['full_name']) : '';
+    $username = isset($_POST['username']) ? sanitize($_POST['username']) : '';
+    $password = $_POST['password'] ?? '';
+    $phone = isset($_POST['phone']) ? sanitize($_POST['phone']) : '';
 
-    if (empty($email) || empty($password) || empty($full_name) || empty($username)) {
-        echo json_encode(['success' => false, 'message' => 'Please fill all required fields.']);
+    $missing = [];
+    if (empty($email)) $missing[] = "Email";
+    if (empty($password)) $missing[] = "Password";
+    if (empty($full_name)) $missing[] = "Full Name";
+    if (empty($username)) $missing[] = "Username";
+
+    if (!empty($missing)) {
+        echo json_encode(['success' => false, 'message' => 'Please fill all required fields: ' . implode(', ', $missing)]);
         exit;
     }
 
@@ -54,8 +60,8 @@ if ($action === 'register') {
 }
 
 if ($action === 'login') {
-    $identifier = sanitize($_POST['identifier']); // email or user_id
-    $password = $_POST['password'];
+    $identifier = isset($_POST['identifier']) ? sanitize($_POST['identifier']) : ''; // email or user_id
+    $password = $_POST['password'] ?? '';
 
     $stmt = $conn->prepare("SELECT * FROM visitors WHERE email = ? OR user_id = ? OR username = ?");
     $stmt->bind_param("sss", $identifier, $identifier, $identifier);
@@ -63,6 +69,10 @@ if ($action === 'login') {
     $result = $stmt->get_result();
 
     if ($user = $result->fetch_assoc()) {
+        if ($user['status'] === 'suspended') {
+            echo json_encode(['success' => false, 'message' => 'Your account has been suspended. Please contact support.']);
+            exit;
+        }
         if (password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['email'] = $user['email'];
@@ -79,4 +89,13 @@ if ($action === 'login') {
 if ($action === 'logout') {
     session_destroy();
     echo json_encode(['success' => true]);
+}
+
+if ($action === 'stop_impersonating') {
+    unset($_SESSION['admin_impersonating']);
+    unset($_SESSION['user_id']);
+    unset($_SESSION['email']);
+    unset($_SESSION['full_name']);
+    header("Location: ../admin/users.php");
+    exit;
 }

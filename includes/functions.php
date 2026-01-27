@@ -86,7 +86,8 @@ function ensureDatabaseTablesExist($conn) {
         'total_predictions' => "INT DEFAULT 0",
         'password_hash' => "VARCHAR(255)",
         'full_name' => "VARCHAR(255)",
-        'username' => "VARCHAR(100) UNIQUE"
+        'username' => "VARCHAR(100) UNIQUE",
+        'status' => "ENUM('active', 'suspended') DEFAULT 'active'"
     ];
     foreach ($visitor_cols as $col => $def) {
         $check = $conn->query("SHOW COLUMNS FROM `visitors` LIKE '$col'");

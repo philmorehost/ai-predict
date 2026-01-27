@@ -8,6 +8,15 @@ require_once 'includes/header.php';
         <p class="text-slate-500">Access your premium predictions and account credits.</p>
     </div>
 
+    <?php if (isset($_GET['err'])): ?>
+        <div class="bg-red-500/10 border border-red-500/20 text-red-600 p-4 rounded-xl text-sm mb-6 text-center font-bold">
+            <?php
+                if($_GET['err'] == 'account_suspended') echo "Your account has been suspended. Please contact support.";
+                else echo "Session lost. Please login again.";
+            ?>
+        </div>
+    <?php endif; ?>
+
     <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-8 rounded-[2.5rem] shadow-xl">
          <form id="login-form" class="space-y-4">
             <div>

@@ -10,6 +10,12 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once 'includes/header.php';
 
+if ($user['status'] === 'suspended') {
+    session_destroy();
+    header('Location: login.php?err=account_suspended');
+    exit;
+}
+
 $user_id = $_SESSION['user_id'];
 $stmt = $conn->prepare("SELECT * FROM visitors WHERE user_id = ?");
 $stmt->bind_param("s", $user_id);
@@ -22,6 +28,13 @@ $history->bind_param("s", $user_id);
 $history->execute();
 $history_res = $history->get_result();
 ?>
+
+<?php if (isset($_SESSION['admin_impersonating'])): ?>
+    <div class="bg-amber-600 text-white px-6 py-2 flex justify-between items-center sticky top-16 z-[140]">
+        <div class="text-xs font-bold uppercase tracking-widest"><i class="fas fa-user-secret mr-2"></i> Impersonating User: <?php echo htmlspecialchars($user['full_name']); ?></div>
+        <a href="api/user_auth.php?action=stop_impersonating" class="bg-white text-amber-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase">Switch back to Admin</a>
+    </div>
+<?php endif; ?>
 
 <div class="max-w-6xl mx-auto px-6 py-12">
     <!-- Welcome Header -->
