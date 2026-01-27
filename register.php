@@ -41,9 +41,6 @@ require_once 'includes/header.php';
 </div>
 
 <script>
-if (localStorage.getItem('visitor_id')) {
-    window.location.href = 'dashboard.php';
-}
 document.getElementById('register-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);

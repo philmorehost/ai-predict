@@ -78,9 +78,6 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     });
 });
 
-if (localStorage.getItem('visitor_id')) {
-    window.location.href = 'dashboard.php';
-}
 </script>
 
 <?php require_once 'includes/footer.php'; ?>
