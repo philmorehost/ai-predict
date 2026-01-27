@@ -110,7 +110,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
                 btn.disabled = true;
 
-                fetch('../api/fetch_news.php')
+                fetch('../api/fetch_news')
                     .then(res => res.text())
                     .then(data => alert(data))
                     .finally(() => {

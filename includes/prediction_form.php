@@ -85,7 +85,7 @@
         submitBtn.innerHTML = '<div class="animate-spin h-5 w-5 border-3 border-white border-t-transparent rounded-full"></div> AI Analyzing Matchup...';
 
         const visitorParam = activeVisitor ? `&visitor_id=${activeVisitor.user_id}` : '';
-        fetch(`api/get_prediction.php?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}${visitorParam}`)
+        fetch(`api/get_prediction?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}${visitorParam}`)
             .then(res => res.json())
             .then(data => {
                 if (data.error) {
@@ -136,7 +136,7 @@
             }
             input.parentElement.classList.add('opacity-70');
             debounceTimer = setTimeout(() => {
-                fetch(`api/get_teams.php?q=${encodeURIComponent(val)}`)
+                fetch(`api/get_teams?q=${encodeURIComponent(val)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.length > 0) {

@@ -54,7 +54,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     btn.disabled = true;
     btn.innerText = 'Logging in...';
 
-    fetch('api/user_auth.php?action=login', {
+    fetch('api/user_auth?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

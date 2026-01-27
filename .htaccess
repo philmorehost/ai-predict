@@ -1,6 +1,8 @@
 RewriteEngine On
 
-# Redirect .php requests to non-php
+# Redirect .php requests to non-php (excluding POST and API)
+RewriteCond %{REQUEST_METHOD} !POST
+RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php
 RewriteRule ^/?(.*)\.php$ /$1 [L,R=301]
 

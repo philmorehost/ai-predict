@@ -128,7 +128,7 @@ function handlePricingClick(e) {
 }
 
 function logout() {
-    fetch('api/user_auth.php?action=logout')
+    fetch('api/user_auth?action=logout')
         .then(() => {
             localStorage.removeItem('visitor_id');
             window.location.href = 'login.php';
