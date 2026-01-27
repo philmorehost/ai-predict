@@ -187,7 +187,23 @@
 </div>
 
 <script>
-    let activeVisitor = null;
+    let activeVisitor = <?php
+        if (isset($_SESSION['user_id'])) {
+            $s_id = $_SESSION['user_id'];
+            $stmt = $conn->prepare("SELECT * FROM visitors WHERE user_id = ?");
+            $stmt->bind_param("s", $s_id);
+            $stmt->execute();
+            echo json_encode($stmt->get_result()->fetch_assoc());
+        } else {
+            echo 'null';
+        }
+    ?>;
+
+    if (activeVisitor) {
+        window.addEventListener('load', () => {
+            updateUIForVisitor();
+        });
+    }
 
     // Visitor Logic
     function loginWithID() {

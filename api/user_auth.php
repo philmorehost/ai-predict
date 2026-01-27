@@ -9,11 +9,14 @@ header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
 
 if ($action === 'register') {
-    $email = isset($_POST['email']) ? sanitize($_POST['email']) : '';
-    $full_name = isset($_POST['full_name']) ? sanitize($_POST['full_name']) : '';
-    $username = isset($_POST['username']) ? sanitize($_POST['username']) : '';
-    $password = $_POST['password'] ?? '';
-    $phone = isset($_POST['phone']) ? sanitize($_POST['phone']) : '';
+    // Handle both traditional POST and JSON
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+    $email = isset($input['email']) ? sanitize($input['email']) : '';
+    $full_name = isset($input['full_name']) ? sanitize($input['full_name']) : '';
+    $username = isset($input['username']) ? sanitize($input['username']) : '';
+    $password = $input['password'] ?? '';
+    $phone = isset($input['phone']) ? sanitize($input['phone']) : '';
 
     $missing = [];
     if (empty($email)) $missing[] = "Email";
@@ -61,8 +64,9 @@ if ($action === 'register') {
 }
 
 if ($action === 'login') {
-    $identifier = isset($_POST['identifier']) ? sanitize($_POST['identifier']) : ''; // email or user_id
-    $password = $_POST['password'] ?? '';
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $identifier = isset($input['identifier']) ? sanitize($input['identifier']) : ''; // email or user_id
+    $password = $input['password'] ?? '';
 
     $stmt = $conn->prepare("SELECT * FROM visitors WHERE email = ? OR user_id = ? OR username = ?");
     $stmt->bind_param("sss", $identifier, $identifier, $identifier);
@@ -78,7 +82,7 @@ if ($action === 'login') {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['full_name'] = $user['full_name'];
-            echo json_encode(['success' => true, 'message' => 'Login successful!', 'user' => $user]);
+            echo json_encode(['success' => true, 'message' => 'Login successful!', 'user' => $user, 'user_id' => $user['user_id']]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid password.']);
         }

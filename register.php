@@ -47,14 +47,10 @@ if (localStorage.getItem('visitor_id')) {
 document.getElementById('register-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
-    const params = new URLSearchParams(formData);
 
     fetch('api/user_auth.php?action=register', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: params.toString()
+        body: formData
     })
     .then(res => res.json())
     .then(data => {

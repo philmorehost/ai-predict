@@ -20,8 +20,8 @@ require_once 'includes/header.php';
     <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-8 rounded-[2.5rem] shadow-xl">
          <form id="login-form" class="space-y-4">
             <div>
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Email or Visitor ID</label>
-                <input type="text" name="identifier" required placeholder="name@example.com" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Email, Username or Visitor ID</label>
+                <input type="text" name="identifier" required placeholder="name@example.com or username" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
             </div>
             <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Password</label>
@@ -42,14 +42,10 @@ require_once 'includes/header.php';
 document.getElementById('login-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
-    const params = new URLSearchParams(formData);
 
     fetch('api/user_auth.php?action=login', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: params.toString()
+        body: formData
     })
     .then(res => res.json())
     .then(data => {
