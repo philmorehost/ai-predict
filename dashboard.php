@@ -8,7 +8,11 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require_once 'includes/header.php';
+$user_id = $_SESSION['user_id'];
+$stmt = $conn->prepare("SELECT * FROM visitors WHERE user_id = ?");
+$stmt->bind_param("s", $user_id);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
 
 if ($user['status'] === 'suspended') {
     session_destroy();
@@ -16,11 +20,7 @@ if ($user['status'] === 'suspended') {
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
-$stmt = $conn->prepare("SELECT * FROM visitors WHERE user_id = ?");
-$stmt->bind_param("s", $user_id);
-$stmt->execute();
-$user = $stmt->get_result()->fetch_assoc();
+require_once 'includes/header.php';
 
 // Fetch prediction history
 $history = $conn->prepare("SELECT * FROM prediction_cache WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");

@@ -3,24 +3,44 @@ require_once 'auth.php';
 
 // Handle Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['update_user'])) {
-        $user_id = $_POST['user_id'];
+    if (isset($_POST['save_user'])) {
+        $action = $_POST['action_type'];
         $full_name = sanitize($_POST['full_name']);
         $email = sanitize($_POST['email']);
+        $username = sanitize($_POST['username']);
         $phone = sanitize($_POST['phone']);
         $credits = (float)$_POST['credits'];
         $status = $_POST['status'];
+        $password = $_POST['password'];
 
-        if (!empty($_POST['password'])) {
-            $password_hash = password_hash($_POST['password'], PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE visitors SET full_name = ?, email = ?, phone = ?, credits = ?, status = ?, password_hash = ? WHERE user_id = ?");
-            $stmt->bind_param("sssdsss", $full_name, $email, $phone, $credits, $status, $password_hash, $user_id);
+        if ($action === 'create') {
+            // Check if exists
+            $check = $conn->prepare("SELECT id FROM visitors WHERE email = ? OR username = ?");
+            $check->bind_param("ss", $email, $username);
+            $check->execute();
+            if ($check->get_result()->num_rows > 0) {
+                $error = "Email or Username already exists!";
+            } else {
+                $user_id = 'SP-' . strtoupper(substr(md5(uniqid()), 0, 8));
+                $password_hash = password_hash($password ?: '123456', PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("INSERT INTO visitors (user_id, username, full_name, email, phone, credits, status, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("sssssdss", $user_id, $username, $full_name, $email, $phone, $credits, $status, $password_hash);
+                $stmt->execute();
+                $success = "User created successfully!";
+            }
         } else {
-            $stmt = $conn->prepare("UPDATE visitors SET full_name = ?, email = ?, phone = ?, credits = ?, status = ? WHERE user_id = ?");
-            $stmt->bind_param("sssdss", $full_name, $email, $phone, $credits, $status, $user_id);
+            $user_id = $_POST['user_id'];
+            if (!empty($password)) {
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("UPDATE visitors SET full_name = ?, email = ?, username = ?, phone = ?, credits = ?, status = ?, password_hash = ? WHERE user_id = ?");
+                $stmt->bind_param("ssssdsss", $full_name, $email, $username, $phone, $credits, $status, $password_hash, $user_id);
+            } else {
+                $stmt = $conn->prepare("UPDATE visitors SET full_name = ?, email = ?, username = ?, phone = ?, credits = ?, status = ? WHERE user_id = ?");
+                $stmt->bind_param("ssssdss", $full_name, $email, $username, $phone, $credits, $status, $user_id);
+            }
+            $stmt->execute();
+            $success = "User updated successfully!";
         }
-        $stmt->execute();
-        $success = "User updated successfully!";
     }
 
     if (isset($_POST['impersonate'])) {
@@ -58,6 +78,9 @@ require_once 'header.php';
 <div class="flex justify-between items-center mb-8">
     <h2 class="text-2xl font-black text-slate-900 tracking-tight">Premium Visitors</h2>
     <div class="flex gap-4">
+        <button onclick="openCreateModal()" class="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i> Create User
+        </button>
         <a href="?export=1" class="bg-white border border-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all flex items-center gap-2">
             <i class="fas fa-file-export"></i> Export CSV
         </a>
@@ -68,6 +91,13 @@ require_once 'header.php';
     <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 p-4 rounded-xl text-sm mb-6 flex items-center gap-3">
         <i class="fas fa-check-circle"></i>
         <p><?php echo $success; ?></p>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($error)): ?>
+    <div class="bg-red-500/10 border border-red-500/20 text-red-600 p-4 rounded-xl text-sm mb-6 flex items-center gap-3">
+        <i class="fas fa-exclamation-circle"></i>
+        <p><?php echo $error; ?></p>
     </div>
 <?php endif; ?>
 
@@ -123,16 +153,17 @@ require_once 'header.php';
     </table>
 </div>
 
-<!-- Edit User Modal -->
+<!-- User Modal -->
 <div id="user-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="text-xl font-black text-slate-900 uppercase">Edit User Details</h3>
+            <h3 class="text-xl font-black text-slate-900 uppercase" id="modal-title">User Details</h3>
             <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
         </div>
         <form method="POST" class="p-8 space-y-4">
             <input type="hidden" name="user_id" id="edit-user-id">
-            <input type="hidden" name="update_user" value="1">
+            <input type="hidden" name="action_type" id="edit-action-type" value="create">
+            <input type="hidden" name="save_user" value="1">
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -140,14 +171,20 @@ require_once 'header.php';
                     <input type="text" name="full_name" id="edit-full-name" required class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-2">Credits</label>
-                    <input type="number" step="0.01" name="credits" id="edit-credits" required class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-2">Username</label>
+                    <input type="text" name="username" id="edit-username" required class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
                 </div>
             </div>
 
-            <div>
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-2">Email Address</label>
-                <input type="email" name="email" id="edit-email" required class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-2">Email Address</label>
+                    <input type="email" name="email" id="edit-email" required class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-2">Credits</label>
+                    <input type="number" step="0.01" name="credits" id="edit-credits" required value="0.00" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
+                </div>
             </div>
 
             <div>
@@ -156,8 +193,8 @@ require_once 'header.php';
             </div>
 
             <div>
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-2">New Password (leave blank to keep current)</label>
-                <input type="password" name="password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-2">Password <span id="pass-help" class="text-slate-400 lowercase">(leave blank to keep current)</span></label>
+                <input type="password" name="password" id="edit-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
             </div>
 
             <div>
@@ -168,19 +205,41 @@ require_once 'header.php';
                 </select>
             </div>
 
-            <button type="submit" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl hover:bg-slate-800 transition-all mt-4">Save Changes</button>
+            <button type="submit" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl hover:bg-slate-800 transition-all mt-4">Save User</button>
         </form>
     </div>
 </div>
 
 <script>
+function openCreateModal() {
+    document.getElementById('modal-title').innerText = 'Create New User';
+    document.getElementById('edit-action-type').value = 'create';
+    document.getElementById('edit-user-id').value = '';
+    document.getElementById('edit-full-name').value = '';
+    document.getElementById('edit-username').value = '';
+    document.getElementById('edit-email').value = '';
+    document.getElementById('edit-phone').value = '';
+    document.getElementById('edit-credits').value = '0.00';
+    document.getElementById('edit-status').value = 'active';
+    document.getElementById('edit-password').required = true;
+    document.getElementById('edit-password').placeholder = '';
+    document.getElementById('pass-help').classList.add('hidden');
+    document.getElementById('user-modal').classList.remove('hidden');
+}
+
 function editUser(user) {
+    document.getElementById('modal-title').innerText = 'Edit User Details';
+    document.getElementById('edit-action-type').value = 'edit';
     document.getElementById('edit-user-id').value = user.user_id;
     document.getElementById('edit-full-name').value = user.full_name;
+    document.getElementById('edit-username').value = user.username;
     document.getElementById('edit-email').value = user.email;
     document.getElementById('edit-phone').value = user.phone;
     document.getElementById('edit-credits').value = user.credits;
     document.getElementById('edit-status').value = user.status;
+    document.getElementById('edit-password').required = false;
+    document.getElementById('edit-password').placeholder = '••••••••';
+    document.getElementById('pass-help').classList.remove('hidden');
     document.getElementById('user-modal').classList.remove('hidden');
 }
 
