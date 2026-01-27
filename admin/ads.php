@@ -1,5 +1,5 @@
 <?php
-require_once 'header.php';
+require_once 'auth.php';
 
 // Handle Delete (Changed to POST for CSRF protection)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_ad'])) {
@@ -69,6 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_ad'])) {
     header("Location: ads.php?success=" . urlencode($success_msg));
     exit;
 }
+
+require_once 'header.php';
 
 // Filtering
 $filter_position = $_GET['position'] ?? '';
@@ -197,7 +199,7 @@ $ads = $conn->query($query . " ORDER BY id DESC");
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <button onclick='editAd(<?php echo json_encode($ad); ?>)' class="p-2 text-slate-400 hover:text-emerald-600 transition-colors">
+                                    <button onclick='editAd(<?php echo htmlspecialchars(json_encode($ad), ENT_QUOTES, 'UTF-8'); ?>)' class="p-2 text-slate-400 hover:text-emerald-600 transition-colors">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this ad?')">

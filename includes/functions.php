@@ -101,7 +101,14 @@ function ensureDatabaseTablesExist($conn) {
     $conn->query("CREATE TABLE IF NOT EXISTS `sessions` (`id` VARCHAR(128) NOT NULL PRIMARY KEY, `data` MEDIUMTEXT NOT NULL, `last_access` INT(11) NOT NULL) $charset");
 
     // Update ads table
-    $conn->query("CREATE TABLE IF NOT EXISTS `ads` (`id` INT AUTO_INCREMENT PRIMARY KEY, `slot_name` VARCHAR(50) UNIQUE, `ad_code` TEXT, `is_active` BOOLEAN DEFAULT TRUE) $charset");
+    $conn->query("CREATE TABLE IF NOT EXISTS `ads` (`id` INT AUTO_INCREMENT PRIMARY KEY, `slot_name` VARCHAR(50), `ad_code` TEXT, `is_active` BOOLEAN DEFAULT TRUE) $charset");
+
+    // Remove unique constraint from slot_name if it exists to allow new location-based system
+    $check_unique = $conn->query("SHOW INDEX FROM `ads` WHERE Column_name = 'slot_name' AND Non_unique = 0");
+    if ($check_unique && $check_unique->num_rows > 0) {
+        $index_name = $check_unique->fetch_assoc()['Key_name'];
+        $conn->query("ALTER TABLE `ads` DROP INDEX `$index_name` ");
+    }
 
     $ad_columns = [
         'position' => "VARCHAR(50)",
