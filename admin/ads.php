@@ -277,7 +277,7 @@ $ads = $conn->query($query . " ORDER BY id DESC");
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Expiry Date*</label>
-                    <input type="date" name="expiry_date" id="ad-expiry-date" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
+                    <input type="date" name="expiry_date" id="ad-expiry-date" required class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20">
                 </div>
             </div>
 

@@ -95,9 +95,9 @@ $last_predictions = $conn->query("SELECT * FROM prediction_cache ORDER BY create
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <?php while($ad = $body_image_ads->fetch_assoc()): ?>
-                    <a href="<?php echo htmlspecialchars($ad['anchor_link']); ?>" target="_blank" class="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500">
-                        <img src="<?php echo htmlspecialchars($ad['image_url']); ?>" alt="Ad" class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                    <a href="<?php echo htmlspecialchars($ad['anchor_link']); ?>" target="_blank" class="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 bg-white dark:bg-slate-800">
+                        <img src="<?php echo htmlspecialchars($ad['image_url']); ?>" alt="Ad" class="w-full h-auto block group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
                             <span class="text-white font-bold flex items-center gap-2">
                                 Learn More <i class="fas fa-arrow-right text-xs"></i>
                             </span>
