@@ -60,7 +60,7 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
 <?php require_once 'user_components.php'; ?>
 
 <!-- Navigation -->
-<nav class="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg z-[150] border-b border-slate-100 dark:border-slate-800">
+<nav class="sticky top-0 bg-white dark:bg-slate-900 z-[150] border-b border-slate-100 dark:border-slate-800">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <a href="index.php" class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
              <?php if ($settings['site_logo']): ?>
@@ -91,8 +91,8 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
     </div>
 
     <!-- Mobile Menu Overlay -->
-    <div id="mobile-menu" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-[200] hidden">
-        <div class="bg-white dark:bg-slate-900 w-64 h-full p-8 shadow-2xl animate-in slide-in-from-left duration-300">
+    <div id="mobile-menu" class="fixed inset-0 bg-slate-900/60 z-[200] hidden">
+        <div class="bg-white dark:bg-slate-900 w-64 h-full p-8 shadow-2xl animate-in slide-in-from-left duration-300 relative z-[210]">
             <div class="flex justify-between items-center mb-10">
                 <div class="text-xl font-black">Menu</div>
                 <button onclick="toggleMobileMenu()" class="text-slate-400"><i class="fas fa-times text-xl"></i></button>

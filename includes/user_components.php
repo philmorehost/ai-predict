@@ -1,5 +1,5 @@
 <!-- User Profile Bar (Sticky Top) -->
-<div id="user-bar" class="hidden fixed top-0 left-0 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-[100] border-b border-slate-100 dark:border-slate-800 shadow-sm animate-in slide-in-from-top duration-500">
+<div id="user-bar" class="hidden fixed top-0 left-0 w-full bg-white dark:bg-slate-900 z-[100] border-b border-slate-100 dark:border-slate-800 shadow-sm animate-in slide-in-from-top duration-500">
     <div class="max-w-5xl mx-auto px-6 py-3 flex justify-between items-center">
         <div class="flex items-center gap-4">
             <div class="h-10 w-10 bg-emerald-600 rounded-full flex items-center justify-center text-white font-black text-sm" id="user-initials">SP</div>
@@ -26,7 +26,7 @@
 </div>
 
 <!-- Profile Modal -->
-<div id="profile-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center hidden p-4">
+<div id="profile-modal" class="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center hidden p-4">
     <div class="bg-white dark:bg-slate-800 rounded-[3rem] max-w-md w-full shadow-2xl animate-in zoom-in duration-300">
         <div class="p-8 md:p-10">
             <div class="flex justify-between items-center mb-8">
@@ -64,7 +64,7 @@
 </div>
 
 <!-- Subscription Modal -->
-<div id="subscribe-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center hidden p-4">
+<div id="subscribe-modal" class="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center hidden p-4">
     <div class="bg-white dark:bg-slate-800 rounded-[3rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in duration-300">
         <div class="p-8 md:p-12">
             <div class="flex justify-between items-start mb-8">
