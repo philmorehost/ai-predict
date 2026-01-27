@@ -73,7 +73,12 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
                 <a href="news.php" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Sport News</a>
             <?php endif; ?>
             <a href="index.php#pricing" onclick="handlePricingClick(event)" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Pricing</a>
-            <a href="login.php" id="nav-login-btn" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Login</a>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="dashboard.php" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Dashboard</a>
+            <?php else: ?>
+                <a href="login.php" id="nav-login-btn" class="text-sm font-bold text-slate-600 dark:text-slate-400">Login</a>
+                <a href="register.php" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Sign Up</a>
+            <?php endif; ?>
         </div>
 
         <div class="flex items-center gap-4">
@@ -94,7 +99,13 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
                     <a href="news.php" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600">Sport News</a>
                 <?php endif; ?>
                 <a href="index.php#pricing" onclick="toggleMobileMenu(); handlePricingClick(event)" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Pricing</a>
-                <a href="login.php" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Login</a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <a href="dashboard.php" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Dashboard</a>
+                    <a href="#" onclick="logout(); return false;" class="block text-lg font-bold text-red-500">Logout</a>
+                <?php else: ?>
+                    <a href="login.php" onclick="toggleMobileMenu()" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Login</a>
+                    <a href="register.php" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Sign Up</a>
+                <?php endif; ?>
             </nav>
         </div>
     </div>
@@ -110,6 +121,14 @@ function handlePricingClick(e) {
             window.location.hash = 'pricing';
         }
     }
+}
+
+function logout() {
+    fetch('api/user_auth.php?action=logout')
+        .then(() => {
+            localStorage.removeItem('visitor_id');
+            window.location.href = 'login.php';
+        });
 }
 
 function toggleMobileMenu() {

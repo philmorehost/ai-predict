@@ -92,8 +92,8 @@ try {
     }
 
     // Save to cache
-    $stmt = $conn->prepare("INSERT INTO prediction_cache (match_hash, home_team, away_team, result_json) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $match_hash, $home, $away, $prediction_json);
+    $stmt = $conn->prepare("INSERT INTO prediction_cache (user_id, match_hash, home_team, away_team, result_json) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", $visitor_id, $match_hash, $home, $away, $prediction_json);
     $stmt->execute();
 
     echo $prediction_json;

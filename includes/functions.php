@@ -81,8 +81,19 @@ function ensureDatabaseTablesExist($conn) {
         'history_enabled' => "TINYINT(1) DEFAULT 1"
     ];
 
-    // Ensure total_predictions in visitors
-    $conn->query("ALTER TABLE visitors ADD COLUMN IF NOT EXISTS total_predictions INT DEFAULT 0");
+    // Ensure new columns in visitors
+    $visitor_cols = [
+        'total_predictions' => "INT DEFAULT 0",
+        'password_hash' => "VARCHAR(255)",
+        'full_name' => "VARCHAR(255)",
+        'username' => "VARCHAR(100) UNIQUE"
+    ];
+    foreach ($visitor_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `visitors` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `visitors` ADD `$col` $def");
+        }
+    }
 
     foreach ($columns as $col => $def) {
         $check = $conn->query("SHOW COLUMNS FROM `settings` LIKE '$col'");
@@ -126,6 +137,12 @@ function ensureDatabaseTablesExist($conn) {
         if ($check && $check->num_rows == 0) {
             $conn->query("ALTER TABLE `ads` ADD `$col` $def");
         }
+    }
+
+    // Ensure user_id in prediction_cache
+    $check_cache = $conn->query("SHOW COLUMNS FROM `prediction_cache` LIKE 'user_id'");
+    if ($check_cache && $check_cache->num_rows == 0) {
+        $conn->query("ALTER TABLE `prediction_cache` ADD `user_id` VARCHAR(50) AFTER `id` ");
     }
 }
 
