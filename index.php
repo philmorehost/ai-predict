@@ -186,6 +186,7 @@ $last_predictions = $conn->query("SELECT * FROM prediction_cache ORDER BY create
 </a>
 <?php endif; ?>
 
+<script>
     const form = document.getElementById('prediction-form');
     const homeInput = document.getElementById('home-team');
     const awayInput = document.getElementById('away-team');
