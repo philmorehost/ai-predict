@@ -2,9 +2,17 @@
 require_once 'includes/header.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$slug = isset($_GET['slug']) ? sanitize($_GET['slug']) : '';
 $now = date('Y-m-d H:i:s');
-$stmt = $conn->prepare("SELECT n.*, c.name as category_name FROM news n LEFT JOIN news_categories c ON n.category_id = c.id WHERE n.id = ? AND (n.published_at IS NULL OR n.published_at <= ?)");
-$stmt->bind_param("is", $id, $now);
+
+if (!empty($slug)) {
+    $stmt = $conn->prepare("SELECT n.*, c.name as category_name FROM news n LEFT JOIN news_categories c ON n.category_id = c.id WHERE n.slug = ? AND (n.published_at IS NULL OR n.published_at <= ?)");
+    $stmt->bind_param("ss", $slug, $now);
+} else {
+    $stmt = $conn->prepare("SELECT n.*, c.name as category_name FROM news n LEFT JOIN news_categories c ON n.category_id = c.id WHERE n.id = ? AND (n.published_at IS NULL OR n.published_at <= ?)");
+    $stmt->bind_param("is", $id, $now);
+}
+
 $stmt->execute();
 $item = $stmt->get_result()->fetch_assoc();
 
@@ -14,7 +22,10 @@ if (!$item) {
 }
 
 // Increment views
-$conn->query("UPDATE news SET views = views + 1 WHERE id = $id");
+if ($item) {
+    $item_id = $item['id'];
+    $conn->query("UPDATE news SET views = views + 1 WHERE id = $item_id");
+}
 
 $header_ad = getAd($conn, 'header_top');
 $sidebar_ad = getAd($conn, 'mid_content');
@@ -96,7 +107,7 @@ $related_res = $conn->query("SELECT * FROM news WHERE category_id = {$item['cate
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <?php while($rel = $related_res->fetch_assoc()): ?>
-                    <a href="news_details.php?id=<?php echo $rel['id']; ?>" class="group">
+                    <a href="/news/<?php echo $rel['slug']; ?>" class="group">
                         <div class="aspect-video rounded-[2rem] overflow-hidden mb-4 relative">
                             <img src="<?php echo $rel['image_url']; ?>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                         </div>
@@ -136,7 +147,7 @@ $related_res = $conn->query("SELECT * FROM news WHERE category_id = {$item['cate
                 <h4 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 border-b border-slate-50 dark:border-slate-700 pb-2">Latest News</h4>
                 <div class="space-y-6">
                     <?php
-                    $recent_sidebar = $conn->query("SELECT * FROM news WHERE id != $id ORDER BY created_at DESC LIMIT 4");
+                    $recent_sidebar = $conn->query("SELECT * FROM news WHERE id != $item_id ORDER BY created_at DESC LIMIT 4");
                     while($rs = $recent_sidebar->fetch_assoc()):
                     ?>
                     <div class="flex gap-4 items-center group">
@@ -144,7 +155,7 @@ $related_res = $conn->query("SELECT * FROM news WHERE category_id = {$item['cate
                             <img src="<?php echo $rs['image_url']; ?>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         </div>
                         <div class="space-y-1">
-                            <a href="news_details.php?id=<?php echo $rs['id']; ?>" class="text-xs font-black text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 transition-all line-clamp-2"><?php echo $rs['title']; ?></a>
+                            <a href="/news/<?php echo $rs['slug']; ?>" class="text-xs font-black text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 transition-all line-clamp-2"><?php echo $rs['title']; ?></a>
                             <div class="text-[9px] font-bold text-slate-400 uppercase"><?php echo date('M j', strtotime($rs['created_at'])); ?></div>
                         </div>
                     </div>

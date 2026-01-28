@@ -6,6 +6,9 @@ RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php
 RewriteRule ^/?(.*)\.php$ /$1 [L,R=301]
 
+# News Pretty URLs
+RewriteRule ^news/([a-z0-9-]+)/?$ news_details.php?slug=$1 [L,QSA]
+
 # Check if file exists as .php
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f

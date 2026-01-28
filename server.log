@@ -1,0 +1,65 @@
+[Wed Jan 28 11:16:18 2026] PHP 8.3.6 Development Server (http://localhost:8000) started
+[Wed Jan 28 11:16:41 2026] [::1]:57690 Accepted
+[Wed Jan 28 11:16:41 2026] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:16:41 2026] [::1]:57690 [500]: GET /news - Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:16:41 2026] [::1]:57690 Closing
+[Wed Jan 28 11:17:54 2026] [::1]:52618 Accepted
+[Wed Jan 28 11:17:54 2026] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:17:54 2026] [::1]:52618 [500]: GET /register - Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:17:54 2026] [::1]:52618 Closing
+[Wed Jan 28 11:17:57 2026] [::1]:52632 Accepted
+[Wed Jan 28 11:17:57 2026] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:17:57 2026] [::1]:52632 [500]: GET /login - Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:17:57 2026] [::1]:52632 Closing
+[Wed Jan 28 11:17:59 2026] [::1]:34574 Accepted
+[Wed Jan 28 11:17:59 2026] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:17:59 2026] [::1]:34574 [500]: GET /news - Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/includes/header.php(2): require_once('...')
+#2 /app/index.php(6): require_once('...')
+#3 {main}
+  thrown in /app/includes/config.php on line 7
+[Wed Jan 28 11:17:59 2026] [::1]:34574 Closing

@@ -12,7 +12,7 @@ $now = date('Y-m-d H:i:s');
 $featured_news = $conn->query("SELECT n.*, c.name as category_name FROM news n LEFT JOIN news_categories c ON n.category_id = c.id WHERE n.is_featured = 1 AND (n.published_at IS NULL OR n.published_at <= '$now') ORDER BY n.published_at DESC, n.created_at DESC LIMIT 3");
 
 // Fetch Trending News (Tickers)
-$trending_news = $conn->query("SELECT title, id FROM news WHERE is_trending = 1 AND (published_at IS NULL OR published_at <= '$now') ORDER BY published_at DESC, created_at DESC LIMIT 5");
+$trending_news = $conn->query("SELECT title, id, slug FROM news WHERE is_trending = 1 AND (published_at IS NULL OR published_at <= '$now') ORDER BY published_at DESC, created_at DESC LIMIT 5");
 
 // Fetch all categories with news count
 $categories_res = $conn->query("SELECT c.*, (SELECT COUNT(*) FROM news WHERE category_id = c.id AND (published_at IS NULL OR published_at <= '$now')) as news_count FROM news_categories c HAVING news_count > 0 ORDER BY name ASC");
@@ -45,7 +45,7 @@ $header_ad = getAd($conn, 'header_top');
         <div class="flex-1 overflow-hidden whitespace-nowrap relative">
             <div class="inline-block animate-[scroll_30s_linear_infinite] hover:pause">
                 <?php while($tn = $trending_news->fetch_assoc()): ?>
-                    <a href="news_details.php?id=<?php echo $tn['id']; ?>" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 mr-12 inline-flex items-center gap-2 italic">
+                    <a href="/news/<?php echo $tn['slug']; ?>" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 mr-12 inline-flex items-center gap-2 italic">
                         <i class="fas fa-bolt text-yellow-500 text-[10px]"></i>
                         <?php echo $tn['title']; ?>
                     </a>
@@ -84,7 +84,7 @@ $header_ad = getAd($conn, 'header_top');
             <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
             <div class="absolute bottom-0 p-8 md:p-10">
                 <span class="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg mb-4 inline-block"><?php echo $f1['category_name']; ?></span>
-                <a href="news_details.php?id=<?php echo $f1['id']; ?>">
+                <a href="/news/<?php echo $f1['slug']; ?>">
                     <h2 class="text-2xl md:text-4xl font-black text-white leading-tight mb-4 hover:text-emerald-400 transition-colors"><?php echo $f1['title']; ?></h2>
                 </a>
                 <div class="flex items-center gap-4 text-slate-300 text-xs font-bold">
@@ -101,7 +101,7 @@ $header_ad = getAd($conn, 'header_top');
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
                 <div class="absolute bottom-0 p-8">
                     <span class="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg mb-3 inline-block"><?php echo $f2['category_name']; ?></span>
-                    <a href="news_details.php?id=<?php echo $f2['id']; ?>">
+                    <a href="/news/<?php echo $f2['slug']; ?>">
                         <h3 class="text-xl font-black text-white hover:text-emerald-400 transition-colors"><?php echo $f2['title']; ?></h3>
                     </a>
                 </div>
@@ -114,7 +114,7 @@ $header_ad = getAd($conn, 'header_top');
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
                 <div class="absolute bottom-0 p-8">
                     <span class="bg-purple-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg mb-3 inline-block"><?php echo $f3['category_name']; ?></span>
-                    <a href="news_details.php?id=<?php echo $f3['id']; ?>">
+                    <a href="/news/<?php echo $f3['slug']; ?>">
                         <h3 class="text-xl font-black text-white hover:text-emerald-400 transition-colors"><?php echo $f3['title']; ?></h3>
                     </a>
                 </div>
@@ -146,7 +146,7 @@ $header_ad = getAd($conn, 'header_top');
                         <div class="aspect-video rounded-3xl overflow-hidden relative">
                             <img src="<?php echo $top['image_url']; ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         </div>
-                        <a href="news_details.php?id=<?php echo $top['id']; ?>">
+                        <a href="/news/<?php echo $top['slug']; ?>">
                             <h4 class="font-black text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors leading-tight"><?php echo $top['title']; ?></h4>
                         </a>
                     </div>
@@ -156,7 +156,7 @@ $header_ad = getAd($conn, 'header_top');
                             <div class="h-14 w-14 rounded-xl overflow-hidden shrink-0">
                                 <img src="<?php echo $n['image_url']; ?>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                             </div>
-                            <a href="news_details.php?id=<?php echo $n['id']; ?>" class="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 transition-all line-clamp-2"><?php echo $n['title']; ?></a>
+                            <a href="/news/<?php echo $n['slug']; ?>" class="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 transition-all line-clamp-2"><?php echo $n['title']; ?></a>
                         </div>
                         <?php endwhile; ?>
                     </div>
@@ -180,7 +180,7 @@ $header_ad = getAd($conn, 'header_top');
                         </div>
                         <div class="flex-1 flex flex-col justify-center py-2">
                             <span class="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2"><?php echo $item['category_name']; ?></span>
-                            <a href="news_details.php?id=<?php echo $item['id']; ?>">
+                            <a href="/news/<?php echo $item['slug']; ?>">
                                 <h4 class="text-xl font-black text-slate-900 dark:text-white mb-3 group-hover:text-emerald-600 transition-colors leading-tight"><?php echo $item['title']; ?></h4>
                             </a>
                             <p class="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 mb-4 leading-relaxed"><?php echo strip_tags($item['content']); ?></p>
@@ -246,7 +246,7 @@ $header_ad = getAd($conn, 'header_top');
                     <div class="flex gap-4 items-start group">
                         <span class="text-2xl font-black text-slate-100 dark:text-slate-700 italic group-hover:text-emerald-500 transition-colors">0<?php echo $rank++; ?></span>
                         <div class="space-y-1">
-                            <a href="news_details.php?id=<?php echo $p['id']; ?>" class="text-xs font-black text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 transition-all line-clamp-2"><?php echo $p['title']; ?></a>
+                            <a href="/news/<?php echo $p['slug']; ?>" class="text-xs font-black text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 transition-all line-clamp-2"><?php echo $p['title']; ?></a>
                             <div class="text-[9px] font-bold text-slate-400 uppercase"><?php echo date('M j, Y', strtotime($p['created_at'])); ?></div>
                         </div>
                     </div>
