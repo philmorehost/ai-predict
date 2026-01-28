@@ -6,7 +6,7 @@ $footer_ads = getAdsByLocation($conn, 'footer_link');
         <?php if ($footer_ads->num_rows > 0): ?>
             <div class="mb-8 flex flex-wrap justify-center gap-x-8 gap-y-4 px-6">
                 <?php while($ad = $footer_ads->fetch_assoc()): ?>
-                    <a href="<?php echo htmlspecialchars($ad['anchor_link']); ?>" target="_blank" class="text-xs font-bold hover:text-emerald-600 transition-colors uppercase tracking-widest">
+                    <a href="<?php echo htmlspecialchars($ad['anchor_link']); ?>" target="_blank" class="text-xs font-bold hover:text-emerald-600 transition-colors tracking-widest">
                         <?php echo htmlspecialchars($ad['anchor_text']); ?>
                     </a>
                 <?php endwhile; ?>
