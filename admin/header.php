@@ -40,6 +40,14 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                     <i class="fas fa-grid-2"></i>
                     <span class="font-bold">Dashboard</span>
                 </a>
+                <a href="news.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'news' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-800 hover:text-white'; ?>">
+                    <i class="fas fa-newspaper"></i>
+                    <span class="font-bold">News Articles</span>
+                </a>
+                <a href="categories.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'categories' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-800 hover:text-white'; ?>">
+                    <i class="fas fa-tags"></i>
+                    <span class="font-bold">Categories</span>
+                </a>
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'history' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-800 hover:text-white'; ?>">
                     <i class="fas fa-history"></i>
                     <span class="font-bold">Prediction History</span>
@@ -119,6 +127,14 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                         <a href="dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'dashboard' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
                             <i class="fas fa-grid-2"></i>
                             <span class="font-bold">Dashboard</span>
+                        </a>
+                        <a href="news.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'news' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
+                            <i class="fas fa-newspaper"></i>
+                            <span class="font-bold">News Articles</span>
+                        </a>
+                        <a href="categories.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'categories' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
+                            <i class="fas fa-tags"></i>
+                            <span class="font-bold">Categories</span>
                         </a>
                         <a href="history.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'history' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
                             <i class="fas fa-history"></i>

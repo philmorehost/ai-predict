@@ -70,7 +70,17 @@ if ($action === 'register') {
         $_SESSION['user_id'] = $user_id;
         $_SESSION['email'] = $email;
         $_SESSION['full_name'] = $full_name;
-        echo json_encode(['success' => true, 'message' => 'Registration successful!', 'user_id' => $user_id]);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Registration successful!',
+            'user_id' => $user_id,
+            'user' => [
+                'user_id' => $user_id,
+                'email' => $email,
+                'full_name' => $full_name,
+                'username' => $username
+            ]
+        ]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Registration failed: ' . $conn->error]);
     }
@@ -99,6 +109,10 @@ if ($action === 'login') {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['full_name'] = $user['full_name'];
+
+            // Remove sensitive data
+            unset($user['password_hash']);
+
             echo json_encode(['success' => true, 'message' => 'Login successful!', 'user' => $user]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid password.']);

@@ -25,9 +25,11 @@ if ($rss) {
             $content = "Breaking Sports Update: " . $title . ". " . $content . " Detailed analysis and tactical deep-dives on this matchup are available for our premium members. Stay tuned for more live updates and expert forecasts from the field.";
         }
         $content .= "\n\nPublished on " . $pubDate;
+        $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title), '-'));
+        $published_at = date('Y-m-d H:i:s', strtotime($pubDate));
 
-        $stmt = $conn->prepare("INSERT IGNORE INTO news (title, content, image_url, source) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $title, $content, $image_url, $source);
+        $stmt = $conn->prepare("INSERT IGNORE INTO news (title, slug, content, image_url, source, published_at) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $title, $slug, $content, $image_url, $source, $published_at);
         $stmt->execute();
 
         $count++;

@@ -52,6 +52,10 @@ function sanitize($input) {
 }
 
 function ensureDatabaseTablesExist($conn) {
+    static $alreadyRun = false;
+    if ($alreadyRun) return;
+    $alreadyRun = true;
+
     $charset = "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
     // 1. Create Core Tables First
@@ -66,11 +70,15 @@ function ensureDatabaseTablesExist($conn) {
     $conn->query("CREATE TABLE IF NOT EXISTS `visitors` (`id` INT AUTO_INCREMENT PRIMARY KEY, `user_id` VARCHAR(50) UNIQUE NOT NULL, `email` VARCHAR(255), `username` VARCHAR(100), `password_hash` VARCHAR(255), `full_name` VARCHAR(255), `phone` VARCHAR(50), `credits` DECIMAL(10,2) DEFAULT 0.00, `total_predictions` INT DEFAULT 0, `status` ENUM('active', 'suspended') DEFAULT 'active', `fingerprint` VARCHAR(255), `ip_address` VARCHAR(45), `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `credit_packages` (`id` INT AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(255) NOT NULL, `price_usd` DECIMAL(10,2) NOT NULL, `credits` DECIMAL(10,2) NOT NULL, `description` TEXT, `status` TINYINT(1) DEFAULT 1) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `payment_notifications` (`id` INT AUTO_INCREMENT PRIMARY KEY, `visitor_id` INT, `package_id` INT, `amount` DECIMAL(10,2), `currency` VARCHAR(10), `proof_file` VARCHAR(255), `status` ENUM('pending', 'approved', 'cancelled') DEFAULT 'pending', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
-    $conn->query("CREATE TABLE IF NOT EXISTS `news` (`id` INT AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(255) NOT NULL, `content` LONGTEXT, `image_url` VARCHAR(255), `source` VARCHAR(100), `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY `news_title` (`title`)) $charset");
+    $conn->query("CREATE TABLE IF NOT EXISTS `news_categories` (`id` INT AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(100) NOT NULL, `slug` VARCHAR(100) UNIQUE NOT NULL, `description` TEXT) $charset");
+    $conn->query("INSERT IGNORE INTO `news_categories` (`id`, `name`, `slug`) VALUES (1, 'General', 'general')");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `news` (`id` INT AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(255) NOT NULL, `slug` VARCHAR(255) UNIQUE, `content` LONGTEXT, `image_url` VARCHAR(255), `category_id` INT DEFAULT 1, `author_id` INT DEFAULT 1, `source` VARCHAR(100), `views` INT DEFAULT 0, `is_featured` TINYINT(1) DEFAULT 0, `is_trending` TINYINT(1) DEFAULT 0, `meta_description` TEXT, `meta_keywords` VARCHAR(255), `published_at` DATETIME, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `news_title` (`title`)) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `daily_usage` (`id` INT AUTO_INCREMENT PRIMARY KEY, `identifier` VARCHAR(255) NOT NULL, `usage_count` INT DEFAULT 0, `last_usage_date` DATE, UNIQUE KEY `daily_usage_idx` (`identifier`, `last_usage_date`)) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `sessions` (`id` VARCHAR(128) NOT NULL PRIMARY KEY, `data` MEDIUMTEXT NOT NULL, `last_access` INT(11) NOT NULL) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `ads` (`id` INT AUTO_INCREMENT PRIMARY KEY, `slot_name` VARCHAR(50), `ad_code` TEXT, `is_active` BOOLEAN DEFAULT TRUE) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `user_history` (`id` INT AUTO_INCREMENT PRIMARY KEY, `user_id` VARCHAR(50), `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
+    $conn->query("CREATE TABLE IF NOT EXISTS `prediction_cache` (`id` INT AUTO_INCREMENT PRIMARY KEY, `match_hash` VARCHAR(64) UNIQUE, `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
 
     // 2. Handle Schema Updates (Columns)
     $columns = [
@@ -145,6 +153,26 @@ function ensureDatabaseTablesExist($conn) {
         $check = $conn->query("SHOW COLUMNS FROM `ads` LIKE '$col'");
         if ($check && $check->num_rows == 0) {
             $conn->query("ALTER TABLE `ads` ADD `$col` $def");
+        }
+    }
+
+    // Handle News Schema Updates
+    $news_cols = [
+        'slug' => "VARCHAR(255) UNIQUE",
+        'category_id' => "INT DEFAULT 1",
+        'author_id' => "INT DEFAULT 1",
+        'views' => "INT DEFAULT 0",
+        'is_featured' => "TINYINT(1) DEFAULT 0",
+        'is_trending' => "TINYINT(1) DEFAULT 0",
+        'meta_description' => "TEXT",
+        'meta_keywords' => "VARCHAR(255)",
+        'published_at' => "DATETIME",
+        'updated_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+    ];
+    foreach ($news_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `news` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `news` ADD `$col` $def");
         }
     }
 

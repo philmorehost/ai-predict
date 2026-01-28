@@ -65,7 +65,7 @@ document.getElementById('register-form').addEventListener('submit', function(e) 
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            localStorage.setItem('visitor_id', data.user_id);
+            localStorage.setItem('visitor_id', data.user['user_id']);
             window.location.href = 'dashboard.php';
         } else {
             alert(data.message);
