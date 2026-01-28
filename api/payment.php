@@ -76,6 +76,25 @@ if ($action === 'bank_transfer') {
     }
 }
 
+if ($action === 'initiate_transaction') {
+    $v_id = (int)$_POST['v_id'];
+    $pkg_id = (int)$_POST['package_id'];
+    $gateway = $_POST['gateway'];
+    $amount = $_POST['amount'];
+    $currency = $_POST['currency'];
+
+    $ref = strtoupper($gateway[0]) . '_' . bin2hex(random_bytes(8));
+
+    $stmt = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("iisdss", $v_id, $pkg_id, $ref, $amount, $currency, $gateway);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'ref' => $ref]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to initiate transaction.']);
+    }
+}
+
 if ($action === 'verify_payment') {
     $ref = $_GET['ref'] ?? '';
     $v_id = (int)$_GET['v_id'];

@@ -123,19 +123,47 @@
             </div>
 
             <!-- Step 3: Payment Method Selection -->
+            <?php
+            $paystack_active = !empty($settings['paystack_public_key']) && !empty($settings['paystack_secret_key']);
+            $flutterwave_active = !empty($settings['flutterwave_public_key']) && !empty($settings['flutterwave_secret_key']);
+            $beewave_active = !empty($settings['beewave_access_key']);
+            ?>
             <div id="payment-method-step" class="hidden max-w-md mx-auto space-y-8 py-10">
                 <div class="text-center">
                     <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">Select Method</h3>
                     <p class="text-slate-500 text-sm">Choose how you want to pay for <span id="selected-pkg-name" class="font-bold text-emerald-600"></span></p>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
-                    <button onclick="processOnlinePayment()" class="p-6 bg-slate-900 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                    <?php if ($paystack_active): ?>
+                    <button onclick="payWithPaystack()" class="p-6 bg-slate-900 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
                         <div class="text-left">
-                            <div class="font-black italic uppercase tracking-tight">Online Payment</div>
+                            <div class="font-black italic uppercase tracking-tight">Paystack</div>
                             <div class="text-[10px] opacity-60">Visa, Mastercard, Mobile Money</div>
+                        </div>
+                        <i class="fab fa-paystack text-2xl"></i>
+                    </button>
+                    <?php endif; ?>
+
+                    <?php if ($flutterwave_active): ?>
+                    <button onclick="payWithFlutterwave()" class="p-6 bg-blue-600 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                        <div class="text-left">
+                            <div class="font-black italic uppercase tracking-tight">Flutterwave</div>
+                            <div class="text-[10px] opacity-60">Card, USSD, Bank Transfer</div>
                         </div>
                         <i class="fas fa-credit-card text-2xl"></i>
                     </button>
+                    <?php endif; ?>
+
+                    <?php if ($beewave_active): ?>
+                    <button onclick="payWithBeewave()" class="p-6 bg-amber-500 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                        <div class="text-left">
+                            <div class="font-black italic uppercase tracking-tight">BeeWave</div>
+                            <div class="text-[10px] opacity-60">Instant Funding</div>
+                        </div>
+                        <i class="fas fa-bolt text-2xl"></i>
+                    </button>
+                    <?php endif; ?>
+
                     <button onclick="showBankTransferUI()" class="p-6 bg-white dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500 transition-all">
                         <div class="text-left">
                             <div class="font-black italic uppercase tracking-tight text-slate-900 dark:text-white">Bank Transfer</div>
@@ -399,13 +427,36 @@
         document.getElementById('payment-method-step').classList.remove('hidden');
     }
 
-    function processOnlinePayment() {
-        const provider = "<?php echo ($settings['primary_currency'] == 'NGN') ? 'paystack' : 'flutterwave'; ?>";
-        if (provider === 'paystack') {
-            payWithPaystack();
-        } else {
-            payWithFlutterwave();
-        }
+    function payWithBeewave() {
+        const amount_ngn = currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?>;
+
+        const formData = new FormData();
+        formData.append('visitor_id', currentOrder.visitor_id);
+        formData.append('package_id', currentSelectedPkg.id);
+        formData.append('gateway', 'beewave');
+        formData.append('amount', amount_ngn);
+        formData.append('currency', 'NGN');
+
+        fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    BeefinanceCheckout.open({
+                        accessKey: '<?php echo $settings['beewave_access_key']; ?>',
+                        name: activeVisitor ? activeVisitor.full_name : 'Visitor ' + currentOrder.user_id,
+                        email: currentOrder.email,
+                        phone: currentOrder.phone,
+                        amount: amount_ngn,
+                        reference: data.ref,
+                        onclose: function () {
+                            console.log("BeeWave Checkout closed");
+                            alert("If your payment was successful, your credits will be updated shortly.");
+                        }
+                    });
+                } else {
+                    alert(data.message);
+                }
+            });
     }
 
     function payWithPaystack() {

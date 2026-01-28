@@ -43,6 +43,7 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <script src="https://checkout.flutterwave.com/v3.js"></script>
+    <script src="https://merchant.beewave.ng/checkout.min.js"></script>
     <style>
         @keyframes roll {
             from { transform: rotate(0deg); }

@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $paystack_secret_key = $_POST['paystack_secret_key'] ?? '';
     $flutterwave_public_key = $_POST['flutterwave_public_key'] ?? '';
     $flutterwave_secret_key = $_POST['flutterwave_secret_key'] ?? '';
+    $beewave_access_key = $_POST['beewave_access_key'] ?? '';
     $primary_currency = $_POST['primary_currency'] ?? 'USD';
     $conversion_rate_ngn = $_POST['conversion_rate_ngn'] ?? 1500;
     $conversion_rate_kes = $_POST['conversion_rate_kes'] ?? 130;
@@ -67,12 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $stmt = $conn->prepare("UPDATE settings SET site_name=?, site_description=?, gemini_api_key=?, footer_text=?, contact_email=?, site_logo=?, site_icon=?, gemini_model_prediction=?, gemini_model_suggestion=?, ai_provider=?, deepseek_api_key=?, deepseek_model_prediction=?, deepseek_model_suggestion=?, deepseek_base_url=?, free_limit=?, prediction_charge=?, whatsapp_number=?, whatsapp_text=?, paystack_public_key=?, paystack_secret_key=?, flutterwave_public_key=?, flutterwave_secret_key=?, primary_currency=?, conversion_rate_ngn=?, conversion_rate_kes=?, bank_details_ngn=?, bank_details_kes=?, ad_expiry_date=?, news_enabled=?, history_enabled=? WHERE id = 1");
+    $stmt = $conn->prepare("UPDATE settings SET site_name=?, site_description=?, gemini_api_key=?, footer_text=?, contact_email=?, site_logo=?, site_icon=?, gemini_model_prediction=?, gemini_model_suggestion=?, ai_provider=?, deepseek_api_key=?, deepseek_model_prediction=?, deepseek_model_suggestion=?, deepseek_base_url=?, free_limit=?, prediction_charge=?, whatsapp_number=?, whatsapp_text=?, paystack_public_key=?, paystack_secret_key=?, flutterwave_public_key=?, flutterwave_secret_key=?, primary_currency=?, conversion_rate_ngn=?, conversion_rate_kes=?, bank_details_ngn=?, bank_details_kes=?, ad_expiry_date=?, news_enabled=?, history_enabled=?, beewave_access_key=? WHERE id = 1");
     if (!$stmt) {
         die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
     }
 
-    $stmt->bind_param("ssssssssssssssisssssssssssssii", $site_name, $site_description, $gemini_api_key, $footer_text, $contact_email, $site_logo, $site_icon, $gemini_model_prediction, $gemini_model_suggestion, $ai_provider, $deepseek_api_key, $deepseek_model_prediction, $deepseek_model_suggestion, $deepseek_base_url, $free_limit, $prediction_charge, $whatsapp_number, $whatsapp_text, $paystack_public_key, $paystack_secret_key, $flutterwave_public_key, $flutterwave_secret_key, $primary_currency, $conversion_rate_ngn, $conversion_rate_kes, $bank_details_ngn, $bank_details_kes, $ad_expiry_date, $news_enabled, $history_enabled);
+    $stmt->bind_param("ssssssssssssssisssssssssssssiis", $site_name, $site_description, $gemini_api_key, $footer_text, $contact_email, $site_logo, $site_icon, $gemini_model_prediction, $gemini_model_suggestion, $ai_provider, $deepseek_api_key, $deepseek_model_prediction, $deepseek_model_suggestion, $deepseek_base_url, $free_limit, $prediction_charge, $whatsapp_number, $whatsapp_text, $paystack_public_key, $paystack_secret_key, $flutterwave_public_key, $flutterwave_secret_key, $primary_currency, $conversion_rate_ngn, $conversion_rate_kes, $bank_details_ngn, $bank_details_kes, $ad_expiry_date, $news_enabled, $history_enabled, $beewave_access_key);
 
     if ($stmt->execute()) $success = "Settings updated successfully!";
     else $error = "Error updating settings: " . $conn->error;
@@ -202,6 +203,9 @@ require_once 'header.php';
                 <div class="grid grid-cols-2 gap-4">
                     <input type="text" name="flutterwave_public_key" value="<?php echo $settings['flutterwave_public_key']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="Flutterwave Public">
                     <input type="password" name="flutterwave_secret_key" value="<?php echo $settings['flutterwave_secret_key']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="Flutterwave Secret">
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <input type="text" name="beewave_access_key" value="<?php echo $settings['beewave_access_key']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="BeeWave Access Key">
                 </div>
                 <div class="grid grid-cols-3 gap-4">
                     <select name="primary_currency" class="bg-slate-50 border border-slate-200 rounded-xl py-3 px-4"><option value="USD" <?php echo $settings['primary_currency'] == 'USD' ? 'selected' : ''; ?>>USD</option><option value="NGN" <?php echo $settings['primary_currency'] == 'NGN' ? 'selected' : ''; ?>>NGN</option></select>

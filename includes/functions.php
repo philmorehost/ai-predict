@@ -79,6 +79,7 @@ function ensureDatabaseTablesExist($conn) {
     $conn->query("CREATE TABLE IF NOT EXISTS `ads` (`id` INT AUTO_INCREMENT PRIMARY KEY, `slot_name` VARCHAR(50), `ad_code` TEXT, `is_active` BOOLEAN DEFAULT TRUE) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `user_history` (`id` INT AUTO_INCREMENT PRIMARY KEY, `user_id` VARCHAR(50), `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `prediction_cache` (`id` INT AUTO_INCREMENT PRIMARY KEY, `match_hash` VARCHAR(64) UNIQUE, `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
+    $conn->query("CREATE TABLE IF NOT EXISTS `online_transactions` (`id` INT AUTO_INCREMENT PRIMARY KEY, `visitor_id` INT, `package_id` INT, `transaction_ref` VARCHAR(100) UNIQUE, `amount` DECIMAL(10,2), `currency` VARCHAR(10), `gateway` VARCHAR(50), `status` ENUM('pending', 'success', 'failed') DEFAULT 'pending', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
 
     // 2. Handle Schema Updates (Columns)
     $columns = [
@@ -106,7 +107,8 @@ function ensureDatabaseTablesExist($conn) {
         'bank_details_kes' => "TEXT",
         'ad_expiry_date' => "DATE",
         'news_enabled' => "TINYINT(1) DEFAULT 1",
-        'history_enabled' => "TINYINT(1) DEFAULT 1"
+        'history_enabled' => "TINYINT(1) DEFAULT 1",
+        'beewave_access_key' => "VARCHAR(255)"
     ];
 
     $visitor_cols = [
