@@ -1,5 +1,9 @@
 <?php
-require_once 'header.php';
+require_once 'auth.php';
+require_once '../includes/functions.php';
+
+ensureDatabaseTablesExist($conn);
+$settings = getSettings($conn);
 
 // Handle News Actions
 if (isset($_POST['action'])) {
@@ -9,7 +13,7 @@ if (isset($_POST['action'])) {
     if (empty($slug)) $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title), '-'));
 
     $content = $_POST['content'] ?? ''; // Don't sanitize content for HTML support (using CKEditor)
-    $source = sanitize($_POST['source'] ?? $settings['site_name']);
+    $source = sanitize($_POST['source'] ?? $settings['site_name'] ?? 'SurePredictor');
     $category_id = (int)($_POST['category_id'] ?? 1);
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_trending = isset($_POST['is_trending']) ? 1 : 0;
@@ -17,6 +21,8 @@ if (isset($_POST['action'])) {
     $published_at = date('Y-m-d H:i:s', strtotime($_POST['published_at'] ?? 'now'));
     $meta_description = sanitize($_POST['meta_description'] ?? '');
     $meta_keywords = sanitize($_POST['meta_keywords'] ?? '');
+
+    $msg = 'published';
 
     // Handle Image Upload
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
@@ -34,6 +40,7 @@ if (isset($_POST['action'])) {
         $stmt = $conn->prepare("INSERT INTO news (title, slug, content, image_url, category_id, source, is_featured, is_trending, published_at, meta_description, meta_keywords) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssisiisss", $title, $slug, $content, $image_url, $category_id, $source, $is_featured, $is_trending, $published_at, $meta_description, $meta_keywords);
         $stmt->execute();
+        $msg = 'published';
     } elseif ($action == 'edit') {
         $id = (int)$_POST['id'];
         if (!empty($image_url)) {
@@ -44,22 +51,27 @@ if (isset($_POST['action'])) {
             $stmt->bind_param("sssisiisssi", $title, $slug, $content, $category_id, $source, $is_featured, $is_trending, $published_at, $meta_description, $meta_keywords, $id);
         }
         $stmt->execute();
+        $msg = 'updated';
     } elseif ($action == 'delete') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("DELETE FROM news WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+        $msg = 'deleted';
     } elseif ($action == 'bulk_delete') {
         $ids = $_POST['ids'] ?? [];
         if (!empty($ids)) {
             $ids = array_map('intval', $ids);
             $id_list = implode(',', $ids);
             $conn->query("DELETE FROM news WHERE id IN ($id_list)");
+            $msg = 'bulk_deleted';
         }
     }
-    header("Location: news.php");
+    header("Location: news.php?msg=" . $msg);
     exit;
 }
+
+require_once 'header.php';
 
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 10;
@@ -79,9 +91,26 @@ if (isset($_GET['edit'])) {
     $edit_id = (int)$_GET['edit'];
     $edit_item = $conn->query("SELECT * FROM news WHERE id = $edit_id")->fetch_assoc();
 }
+
+$status_msg = '';
+if (isset($_GET['msg'])) {
+    switch($_GET['msg']) {
+        case 'published': $status_msg = 'Article published successfully!'; break;
+        case 'updated': $status_msg = 'Article updated successfully!'; break;
+        case 'deleted': $status_msg = 'Article deleted successfully!'; break;
+        case 'bulk_deleted': $status_msg = 'Selected articles deleted successfully!'; break;
+    }
+}
 ?>
 
 <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
+
+<?php if ($status_msg): ?>
+<div class="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-2xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+    <i class="fas fa-check-circle"></i>
+    <?php echo $status_msg; ?>
+</div>
+<?php endif; ?>
 
 <?php if ($edit_item || isset($_GET['add'])): ?>
 <!-- Add/Edit Form -->

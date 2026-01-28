@@ -1,5 +1,6 @@
 <?php
-require_once 'header.php';
+require_once 'auth.php';
+require_once '../includes/functions.php';
 
 // Handle Category Actions
 if (isset($_POST['action'])) {
@@ -7,17 +8,20 @@ if (isset($_POST['action'])) {
     $name = sanitize($_POST['name'] ?? '');
     $slug = sanitize($_POST['slug'] ?? '');
     $description = sanitize($_POST['description'] ?? '');
+    $msg = 'added';
 
     if ($action == 'add') {
         if (empty($slug)) $slug = strtolower(str_replace(' ', '-', $name));
         $stmt = $conn->prepare("INSERT INTO news_categories (name, slug, description) VALUES (?, ?, ?)");
         $stmt->bind_param("sss", $name, $slug, $description);
         $stmt->execute();
+        $msg = 'added';
     } elseif ($action == 'edit') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE news_categories SET name = ?, slug = ?, description = ? WHERE id = ?");
         $stmt->bind_param("sssi", $name, $slug, $description, $id);
         $stmt->execute();
+        $msg = 'updated';
     } elseif ($action == 'delete') {
         $id = (int)$_POST['id'];
         if ($id != 1) { // Prevent deleting default category
@@ -27,13 +31,32 @@ if (isset($_POST['action'])) {
             // Move news to General
             $conn->query("UPDATE news SET category_id = 1 WHERE category_id = $id");
         }
+        $msg = 'deleted';
     }
-    header("Location: categories.php");
+    header("Location: categories.php?msg=" . $msg);
     exit;
 }
 
+require_once 'header.php';
+
 $categories = $conn->query("SELECT * FROM news_categories ORDER BY id ASC");
+
+$status_msg = '';
+if (isset($_GET['msg'])) {
+    switch($_GET['msg']) {
+        case 'added': $status_msg = 'Category added successfully!'; break;
+        case 'updated': $status_msg = 'Category updated successfully!'; break;
+        case 'deleted': $status_msg = 'Category deleted successfully!'; break;
+    }
+}
 ?>
+
+<?php if ($status_msg): ?>
+<div class="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-2xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+    <i class="fas fa-check-circle"></i>
+    <?php echo $status_msg; ?>
+</div>
+<?php endif; ?>
 
 <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-700">
     <div class="flex justify-between items-center mb-8">
