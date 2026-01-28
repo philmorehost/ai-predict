@@ -17,6 +17,7 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
     <title><?php echo $seo['meta_title'] ?: $site_name; ?></title>
     <meta name="description" content="<?php echo $seo['meta_description']; ?>">
 
@@ -62,7 +63,7 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
 <!-- Navigation -->
 <nav class="sticky top-0 bg-white dark:bg-slate-900 z-[150] border-b border-slate-100 dark:border-slate-800">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a href="index.php" class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+        <a href="/" class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
              <?php if ($settings['site_logo']): ?>
                 <img src="<?php echo $settings['site_logo']; ?>" alt="Logo" class="h-8 object-contain">
              <?php else: ?>
@@ -72,16 +73,16 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
         </a>
 
         <div class="hidden md:flex items-center gap-8">
-            <a href="index.php" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Home</a>
+            <a href="/" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Home</a>
             <?php if ($settings['news_enabled']): ?>
-                <a href="news.php" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Sport News</a>
+                <a href="/news" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Sport News</a>
             <?php endif; ?>
-            <a href="index.php#pricing" onclick="handlePricingClick(event)" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Pricing</a>
+            <a href="/#pricing" onclick="handlePricingClick(event)" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Pricing</a>
             <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="dashboard.php" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Dashboard</a>
+                <a href="/dashboard" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Dashboard</a>
             <?php else: ?>
-                <a href="login.php" id="nav-login-btn" class="text-sm font-bold text-slate-600 dark:text-slate-400">Login</a>
-                <a href="register.php" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Sign Up</a>
+                <a href="/login" id="nav-login-btn" class="text-sm font-bold text-slate-600 dark:text-slate-400">Login</a>
+                <a href="/register" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Sign Up</a>
             <?php endif; ?>
         </div>
 
@@ -98,17 +99,17 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
                 <button onclick="toggleMobileMenu()" class="text-slate-400"><i class="fas fa-times text-xl"></i></button>
             </div>
             <nav class="space-y-6">
-                <a href="index.php" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600">Home</a>
+                <a href="/" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600">Home</a>
                 <?php if ($settings['news_enabled']): ?>
-                    <a href="news.php" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600">Sport News</a>
+                    <a href="/news" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600">Sport News</a>
                 <?php endif; ?>
-                <a href="index.php#pricing" onclick="toggleMobileMenu(); handlePricingClick(event)" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Pricing</a>
+                <a href="/#pricing" onclick="toggleMobileMenu(); handlePricingClick(event)" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Pricing</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="dashboard.php" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Dashboard</a>
+                    <a href="/dashboard" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Dashboard</a>
                     <a href="#" onclick="logout(); return false;" class="block text-lg font-bold text-red-500">Logout</a>
                 <?php else: ?>
-                    <a href="login.php" onclick="toggleMobileMenu()" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Login</a>
-                    <a href="register.php" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Sign Up</a>
+                    <a href="/login" onclick="toggleMobileMenu()" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Login</a>
+                    <a href="/register" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Sign Up</a>
                 <?php endif; ?>
             </nav>
         </div>
@@ -128,7 +129,7 @@ function handlePricingClick(e) {
 }
 
 function logout() {
-    fetch('api/user_auth?action=logout')
+    fetch('/api/user_auth?action=logout')
         .then(() => {
             localStorage.removeItem('visitor_id');
             window.location.href = 'login.php';

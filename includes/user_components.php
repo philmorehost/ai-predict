@@ -211,7 +211,7 @@
         const id = idInput ? idInput.value : null;
         if (!id) return;
 
-        fetch(`api/auth?action=login&user_id=${encodeURIComponent(id)}`)
+        fetch(`/api/auth?action=login&user_id=${encodeURIComponent(id)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -270,7 +270,7 @@
     function showResetID() {
         const email = prompt("Enter your registered email to recover your Visitor ID:");
         if (email) {
-            fetch(`api/auth?action=reset&email=${encodeURIComponent(email)}`)
+            fetch(`/api/auth?action=reset&email=${encodeURIComponent(email)}`)
                 .then(res => res.json())
                 .then(data => alert(data.message));
         }
@@ -308,7 +308,7 @@
         formData.append('email', email);
         formData.append('phone', phone);
 
-        fetch('api/auth?action=update_profile', { method: 'POST', body: formData })
+        fetch('/api/auth?action=update_profile', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 notif.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'bg-emerald-50', 'text-emerald-600');
@@ -381,7 +381,7 @@
         formData.append('phone', p);
         formData.append('package_id', currentSelectedPkg.id);
 
-        fetch('api/payment?action=create_order', { method: 'POST', body: formData })
+        fetch('/api/payment?action=create_order', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -446,7 +446,7 @@
     }
 
     function verifyPayment(ref, provider) {
-        fetch(`api/payment?action=verify_payment&ref=${ref}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}&provider=${provider}`)
+        fetch(`/api/payment?action=verify_payment&ref=${ref}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}&provider=${provider}`)
             .then(res => res.json()).then(d => {
                 alert(d.message);
                 if (d.success) {
@@ -478,7 +478,7 @@
         fd.append('currency', 'USD');
         fd.append('proof', file);
 
-        fetch('api/payment?action=bank_transfer', { method: 'POST', body: fd })
+        fetch('/api/payment?action=bank_transfer', { method: 'POST', body: fd })
             .then(res => res.json())
             .then(data => {
                 alert(data.message);
@@ -499,7 +499,7 @@
         const idInput = document.getElementById('visitor-id-input');
         if (idInput) idInput.value = storedID;
 
-        fetch(`api/auth?action=login&user_id=${encodeURIComponent(storedID)}`)
+        fetch(`/api/auth?action=login&user_id=${encodeURIComponent(storedID)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {

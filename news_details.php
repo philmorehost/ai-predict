@@ -42,9 +42,9 @@ $related_res = $conn->query("SELECT * FROM news WHERE category_id = {$item['cate
 
     <!-- Breadcrumbs -->
     <nav class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8">
-        <a href="index.php" class="hover:text-emerald-600">Home</a>
+        <a href="/" class="hover:text-emerald-600">Home</a>
         <i class="fas fa-chevron-right text-[8px]"></i>
-        <a href="news.php" class="hover:text-emerald-600">News</a>
+        <a href="/news" class="hover:text-emerald-600">News</a>
         <i class="fas fa-chevron-right text-[8px]"></i>
         <span class="text-emerald-600"><?php echo $item['category_name']; ?></span>
     </nav>
