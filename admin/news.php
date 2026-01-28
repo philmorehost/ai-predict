@@ -14,7 +14,7 @@ if (isset($_POST['action'])) {
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_trending = isset($_POST['is_trending']) ? 1 : 0;
     $image_url = sanitize($_POST['image_url'] ?? '');
-    $published_at = sanitize($_POST['published_at'] ?? date('Y-m-d H:i:s'));
+    $published_at = date('Y-m-d H:i:s', strtotime($_POST['published_at'] ?? 'now'));
     $meta_description = sanitize($_POST['meta_description'] ?? '');
     $meta_keywords = sanitize($_POST['meta_keywords'] ?? '');
 
@@ -41,7 +41,7 @@ if (isset($_POST['action'])) {
             $stmt->bind_param("ssssisiisssi", $title, $slug, $content, $image_url, $category_id, $source, $is_featured, $is_trending, $published_at, $meta_description, $meta_keywords, $id);
         } else {
             $stmt = $conn->prepare("UPDATE news SET title = ?, slug = ?, content = ?, category_id = ?, source = ?, is_featured = ?, is_trending = ?, published_at = ?, meta_description = ?, meta_keywords = ? WHERE id = ?");
-            $stmt->bind_param("sssisisiisssi", $title, $slug, $content, $category_id, $source, $is_featured, $is_trending, $published_at, $meta_description, $meta_keywords, $id);
+            $stmt->bind_param("sssisiisssi", $title, $slug, $content, $category_id, $source, $is_featured, $is_trending, $published_at, $meta_description, $meta_keywords, $id);
         }
         $stmt->execute();
     } elseif ($action == 'delete') {
@@ -49,6 +49,13 @@ if (isset($_POST['action'])) {
         $stmt = $conn->prepare("DELETE FROM news WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+    } elseif ($action == 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!empty($ids)) {
+            $ids = array_map('intval', $ids);
+            $id_list = implode(',', $ids);
+            $conn->query("DELETE FROM news WHERE id IN ($id_list)");
+        }
     }
     header("Location: news.php");
     exit;
@@ -202,9 +209,17 @@ if (isset($_GET['edit'])) {
 <?php else: ?>
 <!-- News List -->
 <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-700">
-    <div class="flex flex-col md:flex-row justify-between items-md-center gap-6 mb-8">
-        <h3 class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Article Repository</h3>
-        <a href="?add=1" class="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-all text-center">
+    <form id="bulk-form" method="POST">
+    <input type="hidden" name="action" value="bulk_delete">
+
+    <div class="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-8">
+        <div class="flex items-center gap-4">
+            <h3 class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Article Repository</h3>
+            <button type="submit" id="bulk-delete-btn" onclick="return confirm('Delete selected articles?')" class="hidden px-4 py-2 bg-red-500/10 text-red-600 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all">
+                <i class="fas fa-trash mr-2"></i> Delete Selected
+            </button>
+        </div>
+        <a href="?add=1" target="_self" class="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-all text-center">
             <i class="fas fa-plus mr-2"></i> Create New Article
         </a>
     </div>
@@ -213,6 +228,9 @@ if (isset($_GET['edit'])) {
         <table class="w-full text-left">
             <thead>
                 <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">
+                    <th class="px-4 py-4 w-10">
+                        <input type="checkbox" id="select-all" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    </th>
                     <th class="px-4 py-4">Article</th>
                     <th class="px-4 py-4">Category</th>
                     <th class="px-4 py-4">Stats</th>
@@ -223,6 +241,9 @@ if (isset($_GET['edit'])) {
             <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
                 <?php while($item = $news_list->fetch_assoc()): ?>
                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                    <td class="px-4 py-6">
+                        <input type="checkbox" name="ids[]" value="<?php echo $item['id']; ?>" class="news-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    </td>
                     <td class="px-4 py-6">
                         <div class="flex items-center gap-4">
                             <div class="h-12 w-16 bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden shrink-0">
@@ -254,7 +275,7 @@ if (isset($_GET['edit'])) {
                     </td>
                     <td class="px-4 py-6 text-right">
                         <div class="flex justify-end gap-2">
-                            <a href="?edit=<?php echo $item['id']; ?>" class="p-2 text-slate-400 hover:text-emerald-600 transition-all"><i class="fas fa-edit"></i></a>
+                            <a href="?edit=<?php echo $item['id']; ?>" target="_self" class="p-2 text-slate-400 hover:text-emerald-600 transition-all"><i class="fas fa-edit"></i></a>
                             <form method="POST" onsubmit="return confirm('Delete this article?')" class="inline">
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="id" value="<?php echo $item['id']; ?>">
@@ -276,7 +297,36 @@ if (isset($_GET['edit'])) {
         <?php endfor; ?>
     </div>
     <?php endif; ?>
+    </form>
 </div>
+
+<script>
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.news-checkbox');
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            updateBulkDeleteVisibility();
+        });
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkDeleteVisibility);
+    });
+
+    function updateBulkDeleteVisibility() {
+        const checkedCount = document.querySelectorAll('.news-checkbox:checked').length;
+        if (checkedCount > 0) {
+            bulkDeleteBtn.classList.remove('hidden');
+        } else {
+            bulkDeleteBtn.classList.add('hidden');
+        }
+    }
+</script>
 <?php endif; ?>
 
 <?php require_once 'footer.php'; ?>
