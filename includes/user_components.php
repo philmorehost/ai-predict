@@ -233,6 +233,14 @@
         });
     }
 
+    function sanitizePhone(p) {
+        if (!p) return "";
+        let clean = p.toString().replace(/\D/g, '');
+        if (clean.startsWith('234') && clean.length > 10) clean = '0' + clean.substring(3);
+        if (clean.length > 11) clean = clean.slice(-11);
+        return clean;
+    }
+
     // Visitor Logic
     function loginWithID() {
         const idInput = document.getElementById('visitor-id-input');
@@ -387,13 +395,15 @@
 
     function initiatePayment(pkg) {
         currentSelectedPkg = pkg;
-        if (activeVisitor && activeVisitor.email && activeVisitor.phone && activeVisitor.phone.length >= 11) {
-            submitContactInfo(activeVisitor.email, activeVisitor.phone);
+        const cleanPhone = activeVisitor ? sanitizePhone(activeVisitor.phone) : "";
+
+        if (activeVisitor && activeVisitor.email && cleanPhone.length === 11) {
+            submitContactInfo(activeVisitor.email, cleanPhone);
         } else {
             hideAllSteps();
             if (activeVisitor) {
                 document.getElementById('purchase-email').value = activeVisitor.email || '';
-                document.getElementById('purchase-phone').value = activeVisitor.phone || '';
+                document.getElementById('purchase-phone').value = cleanPhone || '';
             }
             document.getElementById('contact-step').classList.remove('hidden');
         }
@@ -401,14 +411,15 @@
 
     function submitContactInfo(email = null, phone = null) {
         const e = email || document.getElementById('purchase-email').value;
-        const p = phone || document.getElementById('purchase-phone').value;
+        const p_raw = phone || document.getElementById('purchase-phone').value;
+        const p = sanitizePhone(p_raw);
 
         if (!e || !p) {
             alert("Please provide both email and phone number.");
             return;
         }
 
-        if (p.length < 11) {
+        if (p.length !== 11) {
             alert("Please provide a valid 11-digit phone number.");
             return;
         }
@@ -438,6 +449,7 @@
 
     function payWithBeewave() {
         const amount_ngn = currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?>;
+        const cleanPhone = sanitizePhone(currentOrder.phone);
 
         const formData = new FormData();
         formData.append('v_id', currentOrder.visitor_id);
@@ -452,9 +464,9 @@
                 if (data.success) {
                     BeefinanceCheckout.open({
                         accessKey: '<?php echo $settings['beewave_access_key']; ?>',
-                        name: activeVisitor ? activeVisitor.full_name : 'Visitor ' + currentOrder.user_id,
+                        name: activeVisitor ? (activeVisitor.full_name || activeVisitor.username) : 'Visitor ' + currentOrder.user_id,
                         email: currentOrder.email,
-                        phone: currentOrder.phone,
+                        phone: cleanPhone,
                         amount: amount_ngn,
                         reference: data.ref,
                         onclose: function () {
