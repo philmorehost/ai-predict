@@ -159,6 +159,10 @@ $history_res = $history->get_result();
                         <span class="font-bold text-sm">Buy Credits</span>
                         <i class="fas fa-plus-circle"></i>
                     </a>
+                    <a href="purchases.php" class="flex items-center justify-between p-4 bg-white/10 rounded-2xl hover:bg-white/20 transition-all">
+                        <span class="font-bold text-sm">Purchase History</span>
+                        <i class="fas fa-history"></i>
+                    </a>
                     <a href="https://wa.me/<?php echo $settings['whatsapp_number']; ?>" target="_blank" class="flex items-center justify-between p-4 bg-white/10 rounded-2xl hover:bg-white/20 transition-all">
                         <span class="font-bold text-sm">Support Chat</span>
                         <i class="fab fa-whatsapp"></i>

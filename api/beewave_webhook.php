@@ -11,12 +11,17 @@ if (!$data) {
     exit('Invalid JSON');
 }
 
-if (isset($data['status']) && $data['status'] === true && isset($data['data']['status']) && $data['data']['status'] === 'success') {
-    $ref = $data['data']['transaction_ref'];
+// Log webhook for debugging
+file_put_contents('beewave_webhook.log', "[" . date('Y-m-d H:i:s') . "] " . $raw_body . PHP_EOL, FILE_APPEND);
 
-    // Look up transaction
-    $stmt = $conn->prepare("SELECT * FROM online_transactions WHERE transaction_ref = ? AND status = 'pending'");
-    $stmt->bind_param("s", $ref);
+if (isset($data['status']) && $data['status'] === true && isset($data['data']['status']) && $data['data']['status'] === 'success') {
+    // Try to find the reference in various fields
+    $ref = $data['data']['transaction_ref'] ?? '';
+    $merchant_ref = $data['data']['reference'] ?? $data['data']['tx_ref'] ?? '';
+
+    // Look up transaction by our reference first, then by gateway reference
+    $stmt = $conn->prepare("SELECT * FROM online_transactions WHERE (transaction_ref = ? OR transaction_ref = ?) AND status = 'pending' LIMIT 1");
+    $stmt->bind_param("ss", $ref, $merchant_ref);
     $stmt->execute();
     $transaction = $stmt->get_result()->fetch_assoc();
 

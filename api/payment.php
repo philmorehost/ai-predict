@@ -88,11 +88,13 @@ if ($action === 'initiate_transaction') {
     $gateway = $_POST['gateway'];
     $amount = $_POST['amount'];
     $currency = $_POST['currency'];
+    $email = $_POST['email'] ?? '';
+    $phone = $_POST['phone'] ?? '';
 
     $ref = strtoupper($gateway[0]) . '_' . bin2hex(random_bytes(8));
 
-    $stmt = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("iisdss", $v_id, $pkg_id, $ref, $amount, $currency, $gateway);
+    $stmt = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("iisdssss", $v_id, $pkg_id, $ref, $amount, $currency, $gateway, $email, $phone);
 
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'ref' => $ref]);
@@ -111,6 +113,7 @@ if ($action === 'verify_payment') {
     $verified = false;
 
     // Server-side verification with Secret Keys
+    $merchant_ref = $ref;
     if ($provider === 'paystack') {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . rawurlencode($ref));
@@ -118,7 +121,10 @@ if ($action === 'verify_payment') {
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer " . $settings['paystack_secret_key']]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
-        if ($response && $response['status'] && $response['data']['status'] === 'success') $verified = true;
+        if ($response && $response['status'] && $response['data']['status'] === 'success') {
+            $verified = true;
+            $merchant_ref = $response['data']['reference'];
+        }
     } elseif ($provider === 'flutterwave') {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "https://api.flutterwave.com/v3/transactions/" . rawurlencode($ref) . "/verify");
@@ -126,7 +132,10 @@ if ($action === 'verify_payment') {
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer " . $settings['flutterwave_secret_key'], "Content-Type: application/json"]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
-        if ($response && $response['status'] === 'success' && $response['data']['status'] === 'successful') $verified = true;
+        if ($response && $response['status'] === 'success' && $response['data']['status'] === 'successful') {
+            $verified = true;
+            $merchant_ref = $response['data']['tx_ref'];
+        }
     }
 
     if (!$verified) {
@@ -140,8 +149,18 @@ if ($action === 'verify_payment') {
     $pkg = $pkg_stmt->get_result()->fetch_assoc();
 
     if ($pkg) {
-        $conn->query("UPDATE visitors SET credits = credits + {$pkg['credits']} WHERE id = $v_id");
-        echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.']);
+        $conn->begin_transaction();
+        try {
+            $conn->query("UPDATE visitors SET credits = credits + {$pkg['credits']} WHERE id = $v_id");
+            $stmt_ot = $conn->prepare("UPDATE online_transactions SET status = 'success' WHERE transaction_ref = ?");
+            $stmt_ot->bind_param("s", $merchant_ref);
+            $stmt_ot->execute();
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.']);
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'message' => 'Failed to update transaction status.']);
+        }
     } else {
         echo json_encode(['success' => false, 'message' => 'Verification failed.']);
     }

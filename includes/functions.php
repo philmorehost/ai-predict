@@ -183,6 +183,18 @@ function ensureDatabaseTablesExist($conn) {
     if ($check_cache && $check_cache->num_rows == 0) {
         $conn->query("ALTER TABLE `prediction_cache` ADD `user_id` VARCHAR(50) AFTER `id` ");
     }
+
+    // online_transactions updates
+    $ot_cols = [
+        'email' => "VARCHAR(255)",
+        'phone' => "VARCHAR(50)"
+    ];
+    foreach ($ot_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `online_transactions` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `online_transactions` ADD `$col` $def");
+        }
+    }
 }
 
 ?>

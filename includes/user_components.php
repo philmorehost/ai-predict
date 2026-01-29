@@ -15,6 +15,9 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <a href="purchases.php" class="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fas fa-history text-slate-600 dark:text-slate-400"></i>
+            </a>
             <button onclick="showProfile()" class="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
                 <i class="fas fa-user-gear text-slate-600 dark:text-slate-400"></i>
             </button>
@@ -457,6 +460,8 @@
         formData.append('gateway', 'beewave');
         formData.append('amount', amount_ngn);
         formData.append('currency', 'NGN');
+        formData.append('email', currentOrder.email);
+        formData.append('phone', cleanPhone);
 
         fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
             .then(res => res.json())
@@ -469,6 +474,7 @@
                         phone: cleanPhone,
                         amount: amount_ngn,
                         reference: data.ref,
+                        transaction_ref: data.ref,
                         onclose: function () {
                             console.log("BeeWave Checkout closed");
                             alert("If your payment was successful, your credits will be updated shortly.");
@@ -481,40 +487,80 @@
     }
 
     function payWithPaystack() {
-        const handler = PaystackPop.setup({
-            key: '<?php echo $settings['paystack_public_key']; ?>',
-            email: currentOrder.email || (activeVisitor ? activeVisitor.email : document.getElementById('purchase-email').value),
-            amount: currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?> * 100,
-            currency: 'NGN',
-            ref: 'SP_' + Math.floor((Math.random() * 1000000000) + 1),
-            callback: function(response){
-                verifyPayment(response.reference, 'paystack');
-            }
-        });
-        handler.openIframe();
+        const amount_ngn = currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?>;
+        const cleanPhone = sanitizePhone(currentOrder.phone);
+
+        const formData = new FormData();
+        formData.append('v_id', currentOrder.visitor_id);
+        formData.append('package_id', currentSelectedPkg.id);
+        formData.append('gateway', 'paystack');
+        formData.append('amount', amount_ngn);
+        formData.append('currency', 'NGN');
+        formData.append('email', currentOrder.email);
+        formData.append('phone', cleanPhone);
+
+        fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const handler = PaystackPop.setup({
+                        key: '<?php echo $settings['paystack_public_key']; ?>',
+                        email: currentOrder.email,
+                        amount: amount_ngn * 100,
+                        currency: 'NGN',
+                        ref: data.ref,
+                        callback: function(response){
+                            verifyPayment(response.reference, 'paystack');
+                        }
+                    });
+                    handler.openIframe();
+                } else {
+                    alert(data.message);
+                }
+            });
     }
 
     function payWithFlutterwave() {
-        FlutterwaveCheckout({
-            public_key: '<?php echo $settings['flutterwave_public_key']; ?>',
-            tx_ref: 'SP_' + Math.floor((Math.random() * 1000000000) + 1),
-            amount: currentSelectedPkg.price_usd,
-            currency: 'USD',
-            payment_options: 'card,mobilemoney,ussd',
-            customer: {
-                email: currentOrder.email || (activeVisitor ? activeVisitor.email : document.getElementById('purchase-email').value),
-                phone_number: currentOrder.phone || (activeVisitor ? activeVisitor.phone : document.getElementById('purchase-phone').value),
-                name: 'Visitor ' + currentOrder.user_id,
-            },
-            callback: function (data) {
-                verifyPayment(data.transaction_id, 'flutterwave');
-            },
-            customizations: {
-                title: 'SurePredictor Credits',
-                description: 'Payment for ' + currentSelectedPkg.name,
-                logo: '<?php echo $settings['site_logo']; ?>',
-            },
-        });
+        const amount_usd = currentSelectedPkg.price_usd;
+        const cleanPhone = sanitizePhone(currentOrder.phone);
+
+        const formData = new FormData();
+        formData.append('v_id', currentOrder.visitor_id);
+        formData.append('package_id', currentSelectedPkg.id);
+        formData.append('gateway', 'flutterwave');
+        formData.append('amount', amount_usd);
+        formData.append('currency', 'USD');
+        formData.append('email', currentOrder.email);
+        formData.append('phone', cleanPhone);
+
+        fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    FlutterwaveCheckout({
+                        public_key: '<?php echo $settings['flutterwave_public_key']; ?>',
+                        tx_ref: data.ref,
+                        amount: amount_usd,
+                        currency: 'USD',
+                        payment_options: 'card,mobilemoney,ussd',
+                        customer: {
+                            email: currentOrder.email,
+                            phone_number: cleanPhone,
+                            name: activeVisitor ? (activeVisitor.full_name || activeVisitor.username) : 'Visitor ' + currentOrder.user_id,
+                        },
+                        callback: function (response) {
+                            verifyPayment(response.transaction_id, 'flutterwave');
+                        },
+                        customizations: {
+                            title: 'SurePredictor Credits',
+                            description: 'Payment for ' + currentSelectedPkg.name,
+                            logo: '<?php echo $settings['site_logo']; ?>',
+                        },
+                    });
+                } else {
+                    alert(data.message);
+                }
+            });
     }
 
     function verifyPayment(ref, provider) {
