@@ -38,7 +38,13 @@ if ($action === 'create_order') {
         $user_id = $visitor['user_id'];
     }
 
-    echo json_encode(['success' => true, 'visitor_id' => $v_id, 'user_id' => $user_id]);
+    echo json_encode([
+        'success' => true,
+        'visitor_id' => $v_id,
+        'user_id' => $user_id,
+        'email' => $email,
+        'phone' => $phone
+    ]);
 }
 
 if ($action === 'bank_transfer') {

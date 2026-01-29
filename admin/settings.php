@@ -213,7 +213,7 @@ require_once 'header.php';
                         <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">BeeWave Webhook URL</p>
                         <div class="flex items-center gap-3">
                             <input type="text" readonly value="<?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/api/beewave_webhook.php'; ?>" id="beewave-webhook-url" class="flex-1 bg-white border border-amber-200 rounded-lg py-2 px-3 text-xs font-mono text-slate-600 outline-none">
-                            <button type="button" onclick="copyWebhookUrl()" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all flex items-center gap-2">
+                            <button type="button" onclick="copyWebhookUrl(this)" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all flex items-center gap-2">
                                 <i class="fas fa-copy"></i>
                                 <span>Copy</span>
                             </button>
@@ -303,13 +303,12 @@ function testAIConnection(p) {
     fetch(`../api/test_ai`, { method: 'POST', body: fd })
         .then(r => r.json()).then(d => { alert(`[${p.toUpperCase()}] ${d.message}`); btn.innerText = 'Test ' + p; });
 }
-function copyWebhookUrl() {
+function copyWebhookUrl(btn) {
     const copyText = document.getElementById("beewave-webhook-url");
     copyText.select();
     copyText.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(copyText.value);
 
-    const btn = event.currentTarget;
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check"></i> <span>Copied!</span>';
     setTimeout(() => { btn.innerHTML = originalText; }, 2000);

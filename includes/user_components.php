@@ -431,7 +431,7 @@
         const amount_ngn = currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?>;
 
         const formData = new FormData();
-        formData.append('visitor_id', currentOrder.visitor_id);
+        formData.append('v_id', currentOrder.visitor_id);
         formData.append('package_id', currentSelectedPkg.id);
         formData.append('gateway', 'beewave');
         formData.append('amount', amount_ngn);
