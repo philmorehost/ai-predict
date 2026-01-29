@@ -114,8 +114,8 @@
                         <input type="email" id="purchase-email" placeholder="name@example.com" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Phone Number</label>
-                        <input type="tel" id="purchase-phone" placeholder="+123..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Phone Number (11 Digits Required)</label>
+                        <input type="tel" id="purchase-phone" placeholder="e.g. 08012345678" maxlength="11" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
                     </div>
                     <button onclick="submitContactInfo()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg shadow-emerald-600/20">Continue to Payment</button>
                     <button onclick="showPricing()" class="w-full text-slate-400 font-bold text-xs">Back to Packages</button>
@@ -387,10 +387,14 @@
 
     function initiatePayment(pkg) {
         currentSelectedPkg = pkg;
-        if (activeVisitor) {
+        if (activeVisitor && activeVisitor.email && activeVisitor.phone && activeVisitor.phone.length >= 11) {
             submitContactInfo(activeVisitor.email, activeVisitor.phone);
         } else {
             hideAllSteps();
+            if (activeVisitor) {
+                document.getElementById('purchase-email').value = activeVisitor.email || '';
+                document.getElementById('purchase-phone').value = activeVisitor.phone || '';
+            }
             document.getElementById('contact-step').classList.remove('hidden');
         }
     }
@@ -401,6 +405,11 @@
 
         if (!e || !p) {
             alert("Please provide both email and phone number.");
+            return;
+        }
+
+        if (p.length < 11) {
+            alert("Please provide a valid 11-digit phone number.");
             return;
         }
 
