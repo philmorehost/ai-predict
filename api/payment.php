@@ -157,8 +157,8 @@ if ($action === 'verify_payment') {
             $res = $conn->query("SELECT credits FROM visitors WHERE id = $v_id");
             $new_balance = $res->fetch_assoc()['credits'];
 
-            $stmt_ot = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0 WHERE transaction_ref = ?");
-            $stmt_ot->bind_param("s", $merchant_ref);
+            $stmt_ot = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0, api_ref = ? WHERE transaction_ref = ?");
+            $stmt_ot->bind_param("ss", $ref, $merchant_ref);
             $stmt_ot->execute();
             $conn->commit();
             echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.', 'new_balance' => $new_balance]);
@@ -227,9 +227,9 @@ if ($action === 'verify_paypal') {
             $new_balance = $res->fetch_assoc()['credits'];
 
             // Log transaction
-            $stmt_ot = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway, status) VALUES (?, ?, ?, ?, 'USD', 'paypal', 'success')");
+            $stmt_ot = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway, status, api_ref) VALUES (?, ?, ?, ?, 'USD', 'paypal', 'success', ?)");
             $amount = $pkg['price_usd'];
-            $stmt_ot->bind_param("iisd", $v_id, $pkg_id, $orderID, $amount);
+            $stmt_ot->bind_param("iisds", $v_id, $pkg_id, $orderID, $amount, $orderID);
             $stmt_ot->execute();
 
             $conn->commit();

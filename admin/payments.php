@@ -134,7 +134,8 @@ $online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as pac
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Package</th>
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gateway</th>
-                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ref</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Our Ref</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">API Ref</th>
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
@@ -159,6 +160,7 @@ $online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as pac
                     <td class="px-6 py-4 text-sm font-bold text-slate-800"><?php echo $p['currency']; ?> <?php echo number_format($p['amount'], 2); ?></td>
                     <td class="px-6 py-4 text-xs font-bold text-slate-500 uppercase"><?php echo $p['gateway']; ?></td>
                     <td class="px-6 py-4 text-[10px] font-mono text-slate-400"><?php echo $p['transaction_ref']; ?></td>
+                    <td class="px-6 py-4 text-[10px] font-mono text-slate-400"><?php echo $p['api_ref'] ?: '-'; ?></td>
                     <td class="px-6 py-4 text-xs font-bold uppercase">
                         <span class="px-2 py-1 rounded-full <?php echo $p['status'] == 'pending' ? 'bg-amber-100 text-amber-600' : ($p['status'] == 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'); ?>">
                             <?php echo $p['status']; ?>

@@ -42,8 +42,8 @@ if (isset($data['status']) && $data['status'] === true && isset($data['data']['s
                 $stmt_upd->execute();
 
                 // Update transaction status
-                $stmt_status = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0 WHERE id = ?");
-                $stmt_status->bind_param("i", $transaction['id']);
+                $stmt_status = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0, api_ref = ? WHERE id = ?");
+                $stmt_status->bind_param("si", $beewave_ref, $transaction['id']);
                 $stmt_status->execute();
 
                 $conn->commit();

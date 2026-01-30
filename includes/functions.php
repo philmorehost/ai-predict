@@ -192,7 +192,8 @@ function ensureDatabaseTablesExist($conn) {
         'email' => "VARCHAR(255)",
         'phone' => "VARCHAR(50)",
         'is_disputed' => "TINYINT(1) DEFAULT 0",
-        'dispute_reason' => "TEXT"
+        'dispute_reason' => "TEXT",
+        'api_ref' => "VARCHAR(100)"
     ];
     foreach ($ot_cols as $col => $def) {
         $check = $conn->query("SHOW COLUMNS FROM `online_transactions` LIKE '$col'");
