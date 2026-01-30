@@ -240,11 +240,12 @@ require_once 'header.php';
                         </div>
                         <div class="space-y-2">
                             <label class="block text-[10px] font-bold text-blue-500 uppercase tracking-widest ml-1">Mode</label>
-                            <select name="paypal_mode" class="w-full bg-white border border-blue-200 rounded-xl py-3 px-4">
+                            <select id="paypal_mode" name="paypal_mode" class="w-full bg-white border border-blue-200 rounded-xl py-3 px-4">
                                 <option value="sandbox" <?php echo $settings['paypal_mode'] == 'sandbox' ? 'selected' : ''; ?>>Sandbox</option>
                                 <option value="live" <?php echo $settings['paypal_mode'] == 'live' ? 'selected' : ''; ?>>Live</option>
                             </select>
                         </div>
+                        <button type="button" onclick="testPayPalConnection()" class="text-xs font-bold text-blue-600 underline">Test PayPal Connection</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-4">
@@ -289,6 +290,16 @@ require_once 'header.php';
                 <p>2. Create key and <b>add balance</b> (min $5).</p>
                 <p>3. DeepSeek is a <b>paid</b> service.</p>
             </div>
+            <div class="mt-8 pt-8 border-t border-slate-100">
+                <h3 class="font-black mb-4 text-sm uppercase tracking-widest text-slate-400">PayPal Setup</h3>
+                <div class="space-y-4 text-xs text-slate-500 leading-relaxed">
+                    <p>1. Log in to <b>developer.paypal.com</b></p>
+                    <p>2. Go to <b>Apps & Credentials</b>.</p>
+                    <p>3. Create a <b>REST API App</b>.</p>
+                    <p>4. Copy the <b>Client ID</b> and <b>Secret</b>.</p>
+                    <p>5. Toggle between <b>Sandbox</b> (testing) and <b>Live</b> modes.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -329,6 +340,34 @@ function testAIConnection(p) {
 
     fetch(`../api/test_ai`, { method: 'POST', body: fd })
         .then(r => r.json()).then(d => { alert(`[${p.toUpperCase()}] ${d.message}`); btn.innerText = 'Test ' + p; });
+}
+function testPayPalConnection() {
+    const clientId = document.querySelector('input[name="paypal_client_id"]').value;
+    const secret = document.querySelector('input[name="paypal_secret_key"]').value;
+    const mode = document.getElementById('paypal_mode').value;
+    const btn = event.target;
+
+    if (!clientId || !secret) {
+        alert("Please enter both Client ID and Secret Key first.");
+        return;
+    }
+
+    btn.innerText = 'Testing...';
+    const fd = new FormData();
+    fd.append('client_id', clientId);
+    fd.append('secret', secret);
+    fd.append('mode', mode);
+
+    fetch(`../api/test_paypal`, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+            alert(`[PAYPAL] ${d.message}`);
+            btn.innerText = 'Test PayPal Connection';
+        })
+        .catch(err => {
+            alert("Error connecting to test script.");
+            btn.innerText = 'Test PayPal Connection';
+        });
 }
 function copyWebhookUrl(btn) {
     const copyText = document.getElementById("beewave-webhook-url");
