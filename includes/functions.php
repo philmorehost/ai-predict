@@ -187,12 +187,26 @@ function ensureDatabaseTablesExist($conn) {
     // online_transactions updates
     $ot_cols = [
         'email' => "VARCHAR(255)",
-        'phone' => "VARCHAR(50)"
+        'phone' => "VARCHAR(50)",
+        'is_disputed' => "TINYINT(1) DEFAULT 0",
+        'dispute_reason' => "TEXT"
     ];
     foreach ($ot_cols as $col => $def) {
         $check = $conn->query("SHOW COLUMNS FROM `online_transactions` LIKE '$col'");
         if ($check && $check->num_rows == 0) {
             $conn->query("ALTER TABLE `online_transactions` ADD `$col` $def");
+        }
+    }
+
+    // payment_notifications updates
+    $pn_cols = [
+        'is_disputed' => "TINYINT(1) DEFAULT 0",
+        'dispute_reason' => "TEXT"
+    ];
+    foreach ($pn_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `payment_notifications` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `payment_notifications` ADD `$col` $def");
         }
     }
 }

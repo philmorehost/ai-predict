@@ -152,7 +152,7 @@ if ($action === 'verify_payment') {
         $conn->begin_transaction();
         try {
             $conn->query("UPDATE visitors SET credits = credits + {$pkg['credits']} WHERE id = $v_id");
-            $stmt_ot = $conn->prepare("UPDATE online_transactions SET status = 'success' WHERE transaction_ref = ?");
+            $stmt_ot = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0 WHERE transaction_ref = ?");
             $stmt_ot->bind_param("s", $merchant_ref);
             $stmt_ot->execute();
             $conn->commit();

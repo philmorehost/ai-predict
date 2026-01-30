@@ -25,9 +25,9 @@ require_once 'includes/header.php';
 
 // Fetch all transactions
 $query = "
-    (SELECT 'Online' as type, gateway as method, amount, currency, status, created_at FROM online_transactions WHERE visitor_id = ?)
+    (SELECT 'Online' as type, id, gateway as method, amount, currency, status, transaction_ref, is_disputed, created_at FROM online_transactions WHERE visitor_id = ?)
     UNION ALL
-    (SELECT 'Manual' as type, 'Bank Transfer' as method, amount, currency, status, created_at FROM payment_notifications WHERE visitor_id = ?)
+    (SELECT 'Manual' as type, id, 'Bank Transfer' as method, amount, currency, status, id as transaction_ref, is_disputed, created_at FROM payment_notifications WHERE visitor_id = ?)
     ORDER BY created_at DESC
 ";
 $stmt = $conn->prepare($query);
@@ -50,7 +50,7 @@ $purchases = $stmt->get_result();
     <div class="space-y-4">
         <?php if ($purchases->num_rows > 0): ?>
             <?php while($p = $purchases->fetch_assoc()): ?>
-                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-6 rounded-[2rem] shadow-sm flex items-center justify-between group hover:border-emerald-500 transition-all">
+                <div class="bg-white dark:bg-slate-800 border <?php echo $p['is_disputed'] ? 'border-red-200 dark:border-red-900/50 bg-red-50/30' : 'border-slate-100 dark:border-slate-700'; ?> p-6 rounded-[2rem] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-emerald-500 transition-all">
                     <div class="flex items-center gap-4">
                         <div class="h-12 w-12 rounded-2xl flex items-center justify-center <?php echo $p['type'] == 'Online' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'; ?>">
                             <i class="fas <?php echo $p['type'] == 'Online' ? 'fa-globe' : 'fa-university'; ?> text-lg"></i>
@@ -58,16 +58,29 @@ $purchases = $stmt->get_result();
                         <div>
                             <div class="font-bold text-slate-800 dark:text-white"><?php echo ucfirst($p['method']); ?></div>
                             <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest"><?php echo $p['type']; ?> Payment</div>
+                            <div class="mt-1 flex items-center gap-2">
+                                <span class="text-[10px] font-mono text-slate-400">Ref: <?php echo $p['transaction_ref']; ?></span>
+                                <button onclick="copyRef('<?php echo $p['transaction_ref']; ?>')" class="text-[10px] text-emerald-600 font-bold hover:underline">Copy</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <div class="font-black text-slate-900 dark:text-white italic"><?php echo $p['currency']; ?> <?php echo number_format($p['amount'], 2); ?></div>
-                        <div class="flex items-center justify-end gap-2 mt-1">
-                            <span class="text-[10px] font-bold <?php echo $p['status'] == 'success' || $p['status'] == 'approved' ? 'text-emerald-500' : ($p['status'] == 'pending' ? 'text-amber-500' : 'text-red-500'); ?> uppercase tracking-widest">
-                                <?php echo $p['status']; ?>
-                            </span>
-                            <span class="text-[10px] text-slate-300">•</span>
-                            <span class="text-[10px] text-slate-400 font-medium"><?php echo date('M j, Y', strtotime($p['created_at'])); ?></span>
+                    <div class="flex items-center justify-between md:justify-end gap-6">
+                        <div class="text-right">
+                            <div class="font-black text-slate-900 dark:text-white italic"><?php echo $p['currency']; ?> <?php echo number_format($p['amount'], 2); ?></div>
+                            <div class="flex items-center justify-end gap-2 mt-1">
+                                <span class="text-[10px] font-bold <?php echo $p['status'] == 'success' || $p['status'] == 'approved' ? 'text-emerald-500' : ($p['status'] == 'pending' ? 'text-amber-500' : 'text-red-500'); ?> uppercase tracking-widest">
+                                    <?php echo $p['status']; ?>
+                                </span>
+                                <span class="text-[10px] text-slate-300">•</span>
+                                <span class="text-[10px] text-slate-400 font-medium"><?php echo date('M j, Y', strtotime($p['created_at'])); ?></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <?php if (!$p['is_disputed'] && ($p['status'] == 'pending' || $p['status'] == 'failed')): ?>
+                                <button onclick="reportIssue('<?php echo $p['type']; ?>', <?php echo $p['id']; ?>)" class="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all">Report Issue</button>
+                            <?php elseif ($p['is_disputed']): ?>
+                                <span class="px-4 py-2 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Issue Reported</span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -86,5 +99,35 @@ $purchases = $stmt->get_result();
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+function copyRef(ref) {
+    navigator.clipboard.writeText(ref).then(() => {
+        alert('Reference copied to clipboard!');
+    });
+}
+
+function reportIssue(type, id) {
+    const reason = prompt("Please describe the issue (e.g., 'I was debited but not credited'):");
+    if (reason && reason.trim().length > 0) {
+        const formData = new FormData();
+        formData.append('type', type);
+        formData.append('id', id);
+        formData.append('reason', reason);
+
+        fetch('api/report_issue', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

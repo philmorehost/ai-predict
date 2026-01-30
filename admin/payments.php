@@ -1,32 +1,45 @@
 <?php
 require_once 'header.php';
 
-if (isset($_GET['approve'])) {
-    $id = (int)$_GET['approve'];
-    $stmt = $conn->prepare("SELECT pn.*, v.credits as v_credits FROM payment_notifications pn JOIN visitors v ON pn.visitor_id = v.id WHERE pn.id = ? AND pn.status = 'pending'");
+if (isset($_GET['approve']) || isset($_GET['approve_online'])) {
+    $id = (int)($_GET['approve'] ?? $_GET['approve_online']);
+    $table = isset($_GET['approve']) ? 'payment_notifications' : 'online_transactions';
+    $status_col = isset($_GET['approve']) ? 'approved' : 'success';
+
+    $stmt = $conn->prepare("SELECT t.*, v.credits as v_credits FROM $table t JOIN visitors v ON t.visitor_id = v.id WHERE t.id = ? AND t.status = 'pending'");
     $stmt->bind_param("i", $id);
     $stmt->execute();
-    $pn = $stmt->get_result()->fetch_assoc();
+    $t = $stmt->get_result()->fetch_assoc();
 
-    if ($pn) {
+    if ($t) {
         // Get package credits
         $pkg_stmt = $conn->prepare("SELECT credits FROM credit_packages WHERE id = ?");
-        $pkg_stmt->bind_param("i", $pn['package_id']);
+        $pkg_stmt->bind_param("i", $t['package_id']);
         $pkg_stmt->execute();
         $pkg = $pkg_stmt->get_result()->fetch_assoc();
 
         if ($pkg) {
-            $new_credits = $pn['v_credits'] + $pkg['credits'];
-            $conn->query("UPDATE visitors SET credits = $new_credits WHERE id = {$pn['visitor_id']}");
-            $conn->query("UPDATE payment_notifications SET status = 'approved' WHERE id = $id");
-            $success = "Payment approved and credits added!";
+            $conn->begin_transaction();
+            try {
+                $new_credits = $t['v_credits'] + $pkg['credits'];
+                $conn->query("UPDATE visitors SET credits = $new_credits WHERE id = {$t['visitor_id']}");
+                $conn->query("UPDATE $table SET status = '$status_col', is_disputed = 0 WHERE id = $id");
+                $conn->commit();
+                $success = "Payment approved and credits added!";
+            } catch (Exception $e) {
+                $conn->rollback();
+                $error = "Failed to approve payment: " . $e->getMessage();
+            }
         }
     }
 }
 
-if (isset($_GET['cancel'])) {
-    $id = (int)$_GET['cancel'];
-    $conn->query("UPDATE payment_notifications SET status = 'cancelled' WHERE id = $id");
+if (isset($_GET['cancel']) || isset($_GET['cancel_online'])) {
+    $id = (int)($_GET['cancel'] ?? $_GET['cancel_online']);
+    $table = isset($_GET['cancel']) ? 'payment_notifications' : 'online_transactions';
+    $status_col = isset($_GET['cancel']) ? 'cancelled' : 'failed';
+
+    $conn->query("UPDATE $table SET status = '$status_col', is_disputed = 0 WHERE id = $id");
     $success = "Payment cancelled!";
 }
 
@@ -38,8 +51,8 @@ while($row = $to_delete->fetch_assoc()) {
 }
 $conn->query("UPDATE payment_notifications SET proof_file = NULL WHERE created_at < '$oneMonthAgo'");
 
-$payments = $conn->query("SELECT pn.*, v.user_id, v.email, cp.name as package_name FROM payment_notifications pn JOIN visitors v ON pn.visitor_id = v.id JOIN credit_packages cp ON pn.package_id = cp.id ORDER BY pn.created_at DESC");
-$online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as package_name FROM online_transactions ot JOIN visitors v ON ot.visitor_id = v.id JOIN credit_packages cp ON ot.package_id = cp.id ORDER BY ot.created_at DESC LIMIT 50");
+$payments = $conn->query("SELECT pn.*, v.user_id, v.email, cp.name as package_name FROM payment_notifications pn JOIN visitors v ON pn.visitor_id = v.id JOIN credit_packages cp ON pn.package_id = cp.id ORDER BY pn.is_disputed DESC, pn.created_at DESC");
+$online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as package_name FROM online_transactions ot JOIN visitors v ON ot.visitor_id = v.id JOIN credit_packages cp ON ot.package_id = cp.id ORDER BY ot.is_disputed DESC, ot.created_at DESC LIMIT 50");
 ?>
 
 <h2 class="text-2xl font-black text-slate-900 mb-8">Payment Notifications (Manual)</h2>
@@ -47,6 +60,12 @@ $online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as pac
 <?php if (isset($success)): ?>
     <div class="bg-emerald-50 border border-emerald-200 text-emerald-600 p-4 rounded-xl text-sm mb-6">
         <p><?php echo $success; ?></p>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($error)): ?>
+    <div class="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-sm mb-6">
+        <p><?php echo $error; ?></p>
     </div>
 <?php endif; ?>
 
@@ -67,8 +86,16 @@ $online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as pac
             <?php while($p = $payments->fetch_assoc()): ?>
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4">
-                        <div class="font-bold text-slate-800"><?php echo $p['user_id']; ?></div>
+                        <div class="flex items-center gap-2">
+                            <div class="font-bold text-slate-800"><?php echo $p['user_id']; ?></div>
+                            <?php if ($p['is_disputed']): ?>
+                                <span class="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase animate-pulse" title="<?php echo htmlspecialchars($p['dispute_reason']); ?>">DISPUTED</span>
+                            <?php endif; ?>
+                        </div>
                         <div class="text-xs text-slate-500"><?php echo $p['email']; ?></div>
+                        <?php if ($p['is_disputed']): ?>
+                            <div class="mt-1 text-[10px] text-red-600 font-bold italic">"<?php echo $p['dispute_reason']; ?>"</div>
+                        <?php endif; ?>
                     </td>
                     <td class="px-6 py-4 text-sm font-medium text-slate-600"><?php echo $p['package_name']; ?></td>
                     <td class="px-6 py-4 text-sm font-bold text-slate-800"><?php echo $p['currency']; ?> <?php echo number_format($p['amount'], 2); ?></td>
@@ -110,14 +137,23 @@ $online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as pac
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ref</th>
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                 <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-50">
             <?php while($p = $online_payments->fetch_assoc()): ?>
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4">
-                        <div class="font-bold text-slate-800"><?php echo $p['user_id']; ?></div>
+                        <div class="flex items-center gap-2">
+                            <div class="font-bold text-slate-800"><?php echo $p['user_id']; ?></div>
+                            <?php if ($p['is_disputed']): ?>
+                                <span class="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase animate-pulse" title="<?php echo htmlspecialchars($p['dispute_reason']); ?>">DISPUTED</span>
+                            <?php endif; ?>
+                        </div>
                         <div class="text-xs text-slate-500"><?php echo $p['email']; ?></div>
+                        <?php if ($p['is_disputed']): ?>
+                            <div class="mt-1 text-[10px] text-red-600 font-bold italic">"<?php echo $p['dispute_reason']; ?>"</div>
+                        <?php endif; ?>
                     </td>
                     <td class="px-6 py-4 text-sm font-medium text-slate-600"><?php echo $p['package_name']; ?></td>
                     <td class="px-6 py-4 text-sm font-bold text-slate-800"><?php echo $p['currency']; ?> <?php echo number_format($p['amount'], 2); ?></td>
@@ -129,6 +165,12 @@ $online_payments = $conn->query("SELECT ot.*, v.user_id, v.email, cp.name as pac
                         </span>
                     </td>
                     <td class="px-6 py-4 text-xs text-slate-500"><?php echo date('M j, Y H:i', strtotime($p['created_at'])); ?></td>
+                    <td class="px-6 py-4 text-right">
+                        <?php if ($p['status'] == 'pending'): ?>
+                            <a href="?approve_online=<?php echo $p['id']; ?>" class="text-emerald-600 hover:text-emerald-500 font-bold text-xs mr-4">Approve</a>
+                            <a href="?cancel_online=<?php echo $p['id']; ?>" onclick="return confirm('Cancel this payment?')" class="text-red-500 hover:text-red-400 font-bold text-xs">Cancel</a>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endwhile; ?>
         </tbody>

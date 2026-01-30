@@ -11,17 +11,15 @@ if (!$data) {
     exit('Invalid JSON');
 }
 
-// Log webhook for debugging
-file_put_contents('beewave_webhook.log', "[" . date('Y-m-d H:i:s') . "] " . $raw_body . PHP_EOL, FILE_APPEND);
-
 if (isset($data['status']) && $data['status'] === true && isset($data['data']['status']) && $data['data']['status'] === 'success') {
     // Try to find the reference in various fields
-    $ref = $data['data']['transaction_ref'] ?? '';
-    $merchant_ref = $data['data']['reference'] ?? $data['data']['tx_ref'] ?? '';
+    $beewave_ref = $data['data']['transaction_ref'] ?? '';
+    $merchant_ref = $data['data']['reference'] ?? $data['data']['tx_ref'] ?? $data['data']['merchant_ref'] ?? '';
+    $tracking_ref = $data['data']['customer']['tracking_ref'] ?? $data['data']['tracking_ref'] ?? '';
 
-    // Look up transaction by our reference first, then by gateway reference
-    $stmt = $conn->prepare("SELECT * FROM online_transactions WHERE (transaction_ref = ? OR transaction_ref = ?) AND status = 'pending' LIMIT 1");
-    $stmt->bind_param("ss", $ref, $merchant_ref);
+    // Look up transaction by our reference first, then by tracking ref, then by gateway reference
+    $stmt = $conn->prepare("SELECT * FROM online_transactions WHERE (transaction_ref = ? OR transaction_ref = ? OR transaction_ref = ?) AND status = 'pending' LIMIT 1");
+    $stmt->bind_param("sss", $merchant_ref, $tracking_ref, $beewave_ref);
     $stmt->execute();
     $transaction = $stmt->get_result()->fetch_assoc();
 
@@ -44,7 +42,7 @@ if (isset($data['status']) && $data['status'] === true && isset($data['data']['s
                 $stmt_upd->execute();
 
                 // Update transaction status
-                $stmt_status = $conn->prepare("UPDATE online_transactions SET status = 'success' WHERE id = ?");
+                $stmt_status = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0 WHERE id = ?");
                 $stmt_status->bind_param("i", $transaction['id']);
                 $stmt_status->execute();
 
