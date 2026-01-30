@@ -108,7 +108,10 @@ function ensureDatabaseTablesExist($conn) {
         'ad_expiry_date' => "DATE",
         'news_enabled' => "TINYINT(1) DEFAULT 1",
         'history_enabled' => "TINYINT(1) DEFAULT 1",
-        'beewave_access_key' => "VARCHAR(255)"
+        'beewave_access_key' => "VARCHAR(255)",
+        'paypal_client_id' => "VARCHAR(255)",
+        'paypal_secret_key' => "VARCHAR(255)",
+        'paypal_mode' => "VARCHAR(20) DEFAULT 'sandbox'"
     ];
 
     $visitor_cols = [

@@ -130,6 +130,7 @@
             $paystack_active = !empty($settings['paystack_public_key']) && !empty($settings['paystack_secret_key']);
             $flutterwave_active = !empty($settings['flutterwave_public_key']) && !empty($settings['flutterwave_secret_key']);
             $beewave_active = !empty($settings['beewave_access_key']);
+            $paypal_active = !empty($settings['paypal_client_id']);
             ?>
             <div id="payment-method-step" class="hidden max-w-md mx-auto space-y-8 py-10">
                 <div class="text-center">
@@ -165,6 +166,34 @@
                         </div>
                         <i class="fas fa-bolt text-2xl"></i>
                     </button>
+                    <?php endif; ?>
+
+                    <?php if ($paypal_active): ?>
+                    <div id="paypal-button-container" class="w-full"></div>
+                    <script>
+                        let paypalInitialized = false;
+                        function initPayPal() {
+                            if (paypalInitialized) return;
+                            paypal.Buttons({
+                                createOrder: function(data, actions) {
+                                    return actions.order.create({
+                                        purchase_units: [{
+                                            amount: {
+                                                value: currentSelectedPkg.price_usd
+                                            },
+                                            description: 'SurePredictor Credits: ' + currentSelectedPkg.name
+                                        }]
+                                    });
+                                },
+                                onApprove: function(data, actions) {
+                                    return actions.order.capture().then(function(details) {
+                                        verifyPayPalPayment(data.orderID);
+                                    });
+                                }
+                            }).render('#paypal-button-container');
+                            paypalInitialized = true;
+                        }
+                    </script>
                     <?php endif; ?>
 
                     <button onclick="showBankTransferUI()" class="p-6 bg-white dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500 transition-all">
@@ -448,6 +477,9 @@
         hideAllSteps();
         document.getElementById('selected-pkg-name').innerText = currentSelectedPkg.name + ' ($' + currentSelectedPkg.price_usd + ')';
         document.getElementById('payment-method-step').classList.remove('hidden');
+        if (typeof initPayPal === 'function') {
+            initPayPal();
+        }
     }
 
     function payWithBeewave() {
@@ -482,6 +514,20 @@
                     });
                 } else {
                     alert(data.message);
+                }
+            });
+    }
+
+    function verifyPayPalPayment(orderID) {
+        fetch(`/api/payment?action=verify_paypal&orderID=${orderID}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}`)
+            .then(res => res.json()).then(d => {
+                if (d.success) {
+                    localStorage.setItem('visitor_id', currentOrder.user_id);
+                    const creditsAdded = currentSelectedPkg.credits;
+                    const newBalance = d.new_balance;
+                    window.location.href = `dashboard.php?msg=payment_success&added=${creditsAdded}&bal=${newBalance}`;
+                } else {
+                    alert(d.message);
                 }
             });
     }

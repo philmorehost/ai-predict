@@ -115,7 +115,7 @@ function reportIssue(type, id) {
         formData.append('id', id);
         formData.append('reason', reason);
 
-        fetch('api/report_issue', {
+        fetch('api/report_issue.php', {
             method: 'POST',
             body: formData
         })

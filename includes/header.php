@@ -44,6 +44,9 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <script src="https://checkout.flutterwave.com/v3.js"></script>
     <script src="https://merchant.beewave.ng/checkout.min.js"></script>
+    <?php if (!empty($settings['paypal_client_id'])): ?>
+        <script src="https://www.paypal.com/sdk/js?client-id=<?php echo $settings['paypal_client_id']; ?>&currency=USD"></script>
+    <?php endif; ?>
     <style>
         @keyframes roll {
             from { transform: rotate(0deg); }
