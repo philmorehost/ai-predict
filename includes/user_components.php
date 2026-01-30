@@ -566,10 +566,13 @@
     function verifyPayment(ref, provider) {
         fetch(`/api/payment?action=verify_payment&ref=${ref}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}&provider=${provider}`)
             .then(res => res.json()).then(d => {
-                alert(d.message);
                 if (d.success) {
                     localStorage.setItem('visitor_id', currentOrder.user_id);
-                    location.reload();
+                    const creditsAdded = currentSelectedPkg.credits;
+                    const newBalance = d.new_balance;
+                    window.location.href = `dashboard.php?msg=payment_success&added=${creditsAdded}&bal=${newBalance}`;
+                } else {
+                    alert(d.message);
                 }
             });
     }

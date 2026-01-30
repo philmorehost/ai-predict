@@ -37,6 +37,25 @@ $history_res = $history->get_result();
 <?php endif; ?>
 
 <div class="max-w-6xl mx-auto px-6 py-12">
+    <!-- Success Notification -->
+    <?php if (isset($_GET['msg']) && $_GET['msg'] === 'payment_success'): ?>
+        <div class="mb-10 p-8 rounded-[2.5rem] bg-emerald-50 border-2 border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-6 animate-in zoom-in duration-500 shadow-lg shadow-emerald-500/5">
+            <div class="flex items-center gap-6 text-center md:text-left">
+                <div class="h-16 w-16 bg-emerald-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-xl shadow-emerald-600/20">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight leading-none mb-2">Payment Successful!</h2>
+                    <p class="text-slate-500 font-medium">Your account has been credited with <span class="text-emerald-600 font-black italic"><?php echo htmlspecialchars($_GET['added']); ?> Credits</span>.</p>
+                </div>
+            </div>
+            <div class="bg-white px-8 py-4 rounded-2xl border border-emerald-100 shadow-sm text-center">
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">New Balance</div>
+                <div class="text-2xl font-black text-emerald-600"><?php echo htmlspecialchars($_GET['bal']); ?> <span class="text-xs opacity-50 font-bold uppercase tracking-widest ml-1">Credits</span></div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Welcome Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
         <div>

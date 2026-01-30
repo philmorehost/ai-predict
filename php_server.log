@@ -1,0 +1,15 @@
+[Fri Jan 30 05:48:29 2026] PHP 8.3.6 Development Server (http://localhost:8000) started
+[Fri Jan 30 05:48:32 2026] [::1]:57478 Accepted
+[Fri Jan 30 05:48:32 2026] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/dashboard.php(2): require_once('...')
+#2 {main}
+  thrown in /app/includes/config.php on line 7
+[Fri Jan 30 05:48:32 2026] [::1]:57478 [500]: GET /dashboard.php?msg=payment_success&added=10&bal=50.25 - Uncaught mysqli_sql_exception: No such file or directory in /app/includes/config.php:7
+Stack trace:
+#0 /app/includes/config.php(7): mysqli->__construct()
+#1 /app/dashboard.php(2): require_once('...')
+#2 {main}
+  thrown in /app/includes/config.php on line 7
+[Fri Jan 30 05:48:32 2026] [::1]:57478 Closing

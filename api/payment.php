@@ -152,11 +152,16 @@ if ($action === 'verify_payment') {
         $conn->begin_transaction();
         try {
             $conn->query("UPDATE visitors SET credits = credits + {$pkg['credits']} WHERE id = $v_id");
+
+            // Get new balance
+            $res = $conn->query("SELECT credits FROM visitors WHERE id = $v_id");
+            $new_balance = $res->fetch_assoc()['credits'];
+
             $stmt_ot = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0 WHERE transaction_ref = ?");
             $stmt_ot->bind_param("s", $merchant_ref);
             $stmt_ot->execute();
             $conn->commit();
-            echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.']);
+            echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.', 'new_balance' => $new_balance]);
         } catch (Exception $e) {
             $conn->rollback();
             echo json_encode(['success' => false, 'message' => 'Failed to update transaction status.']);
