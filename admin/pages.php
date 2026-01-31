@@ -18,6 +18,9 @@ if (isset($_POST['action'])) {
     $meta_keywords = sanitize($_POST['meta_keywords'] ?? '');
     $status = sanitize($_POST['status'] ?? 'published');
     $image_url = sanitize($_POST['image_url'] ?? '');
+    $show_in_main_menu = isset($_POST['show_in_main_menu']) ? 1 : 0;
+    $show_in_footer_menu = isset($_POST['show_in_footer_menu']) ? 1 : 0;
+    $show_in_news_sidebar = isset($_POST['show_in_news_sidebar']) ? 1 : 0;
 
     // Handle Image Upload
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
@@ -32,18 +35,18 @@ if (isset($_POST['action'])) {
     }
 
     if ($action == 'add') {
-        $stmt = $conn->prepare("INSERT INTO pages (title, slug, content, image_url, meta_title, meta_description, meta_keywords, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssss", $title, $slug, $content, $image_url, $meta_title, $meta_description, $meta_keywords, $status);
+        $stmt = $conn->prepare("INSERT INTO pages (title, slug, content, image_url, meta_title, meta_description, meta_keywords, status, show_in_main_menu, show_in_footer_menu, show_in_news_sidebar) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssssiii", $title, $slug, $content, $image_url, $meta_title, $meta_description, $meta_keywords, $status, $show_in_main_menu, $show_in_footer_menu, $show_in_news_sidebar);
         $stmt->execute();
         $msg = 'created';
     } elseif ($action == 'edit') {
         $id = (int)$_POST['id'];
         if (!empty($image_url)) {
-            $stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, image_url = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, status = ? WHERE id = ?");
-            $stmt->bind_param("ssssssssi", $title, $slug, $content, $image_url, $meta_title, $meta_description, $meta_keywords, $status, $id);
+            $stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, image_url = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, status = ?, show_in_main_menu = ?, show_in_footer_menu = ?, show_in_news_sidebar = ? WHERE id = ?");
+            $stmt->bind_param("ssssssssiiii", $title, $slug, $content, $image_url, $meta_title, $meta_description, $meta_keywords, $status, $show_in_main_menu, $show_in_footer_menu, $show_in_news_sidebar, $id);
         } else {
-            $stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, status = ? WHERE id = ?");
-            $stmt->bind_param("sssssssi", $title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $id);
+            $stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, status = ?, show_in_main_menu = ?, show_in_footer_menu = ?, show_in_news_sidebar = ? WHERE id = ?");
+            $stmt->bind_param("ssssssiiii", $title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $show_in_main_menu, $show_in_footer_menu, $show_in_news_sidebar, $id);
         }
         $stmt->execute();
         $msg = 'updated';
@@ -53,6 +56,14 @@ if (isset($_POST['action'])) {
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $msg = 'deleted';
+    } elseif ($action == 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!empty($ids)) {
+            $ids = array_map('intval', $ids);
+            $id_list = implode(',', $ids);
+            $conn->query("DELETE FROM pages WHERE id IN ($id_list)");
+            $msg = 'bulk_deleted';
+        }
     }
     header("Location: pages.php?msg=" . $msg);
     exit;
@@ -75,6 +86,7 @@ if (isset($_GET['msg'])) {
         case 'created': $status_msg = 'Page created successfully!'; break;
         case 'updated': $status_msg = 'Page updated successfully!'; break;
         case 'deleted': $status_msg = 'Page deleted successfully!'; break;
+        case 'bulk_deleted': $status_msg = 'Selected pages deleted successfully!'; break;
     }
 }
 ?>
@@ -168,11 +180,29 @@ if (isset($_GET['msg'])) {
                 </div>
 
                 <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
-                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 dark:border-slate-800 pb-2">Status</h4>
-                    <select name="status" class="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2 px-4 outline-none text-sm">
-                        <option value="published" <?php echo ($edit_item && $edit_item['status'] == 'published') ? 'selected' : ''; ?>>Published</option>
-                        <option value="draft" <?php echo ($edit_item && $edit_item['status'] == 'draft') ? 'selected' : ''; ?>>Draft</option>
-                    </select>
+                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 dark:border-slate-800 pb-2">Display Settings</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" name="show_in_main_menu" id="show_in_main_menu" value="1" <?php echo ($edit_item && $edit_item['show_in_main_menu']) ? 'checked' : ''; ?> class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label for="show_in_main_menu" class="text-xs font-bold text-slate-600">Show in Main Menu</label>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" name="show_in_footer_menu" id="show_in_footer_menu" value="1" <?php echo ($edit_item && $edit_item['show_in_footer_menu']) ? 'checked' : ''; ?> class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label for="show_in_footer_menu" class="text-xs font-bold text-slate-600">Show in Footer Menu</label>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" name="show_in_news_sidebar" id="show_in_news_sidebar" value="1" <?php echo ($edit_item && $edit_item['show_in_news_sidebar']) ? 'checked' : ''; ?> class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label for="show_in_news_sidebar" class="text-xs font-bold text-slate-600">Show in News Sidebar</label>
+                        </div>
+                    </div>
+
+                    <div class="mt-8">
+                        <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Publishing Status</label>
+                        <select name="status" class="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2 px-4 outline-none text-sm">
+                            <option value="published" <?php echo ($edit_item && $edit_item['status'] == 'published') ? 'selected' : ''; ?>>Published</option>
+                            <option value="draft" <?php echo ($edit_item && $edit_item['status'] == 'draft') ? 'selected' : ''; ?>>Draft</option>
+                        </select>
+                    </div>
                 </div>
 
                 <button type="submit" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-all flex items-center justify-center gap-3">
@@ -197,10 +227,28 @@ if (isset($_GET['msg'])) {
 <?php else: ?>
 <!-- Pages List -->
 <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-700">
+    <form id="bulk-form" method="POST">
+    <input type="hidden" name="action" value="bulk_delete">
+
+    <div class="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-8">
+        <div class="flex items-center gap-4">
+            <h3 class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Page Repository</h3>
+            <button type="submit" id="bulk-delete-btn" onclick="return confirm('Delete selected pages?')" class="hidden px-4 py-2 bg-red-500/10 text-red-600 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all">
+                <i class="fas fa-trash mr-2"></i> Delete Selected
+            </button>
+        </div>
+        <a href="?add=1" class="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-all text-center">
+            <i class="fas fa-plus mr-2"></i> Create New Page
+        </a>
+    </div>
+
     <div class="overflow-x-auto">
         <table class="w-full text-left">
             <thead>
                 <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">
+                    <th class="px-4 py-4 w-10">
+                        <input type="checkbox" id="select-all" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    </th>
                     <th class="px-4 py-4">Page Title</th>
                     <th class="px-4 py-4">URL Slug</th>
                     <th class="px-4 py-4">Status</th>
@@ -211,6 +259,9 @@ if (isset($_GET['msg'])) {
             <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
                 <?php while($item = $pages_list->fetch_assoc()): ?>
                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                    <td class="px-4 py-6">
+                        <input type="checkbox" name="ids[]" value="<?php echo $item['id']; ?>" class="page-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    </td>
                     <td class="px-4 py-6">
                         <div class="text-sm font-bold text-slate-800 dark:text-white"><?php echo $item['title']; ?></div>
                     </td>
@@ -244,7 +295,36 @@ if (isset($_GET['msg'])) {
             </tbody>
         </table>
     </div>
+    </form>
 </div>
+
+<script>
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.page-checkbox');
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            updateBulkDeleteVisibility();
+        });
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkDeleteVisibility);
+    });
+
+    function updateBulkDeleteVisibility() {
+        const checkedCount = document.querySelectorAll('.page-checkbox:checked').length;
+        if (checkedCount > 0) {
+            bulkDeleteBtn.classList.remove('hidden');
+        } else {
+            bulkDeleteBtn.classList.add('hidden');
+        }
+    }
+</script>
 <?php endif; ?>
 
 <?php require_once 'footer.php'; ?>

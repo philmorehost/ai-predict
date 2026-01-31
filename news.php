@@ -232,6 +232,21 @@ $header_ad = getAd($conn, 'header_top');
                     </a>
                     <?php endforeach; ?>
                 </div>
+
+                <?php
+                $sidebar_pages = $conn->query("SELECT title, slug FROM pages WHERE show_in_news_sidebar = 1 AND status = 'published' ORDER BY title ASC");
+                if ($sidebar_pages->num_rows > 0):
+                ?>
+                <div class="mt-8 pt-6 border-t border-slate-50 dark:border-slate-700 space-y-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Quick Links</h4>
+                    <?php while($p = $sidebar_pages->fetch_assoc()): ?>
+                        <a href="/p/<?php echo $p['slug']; ?>" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-tight">
+                            <i class="fas fa-link text-[10px] opacity-40"></i>
+                            <?php echo $p['title']; ?>
+                        </a>
+                    <?php endwhile; ?>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Most Viewed News -->

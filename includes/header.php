@@ -89,6 +89,14 @@ $meta_key = isset($custom_seo['keywords']) ? $custom_seo['keywords'] : '';
             <?php if ($settings['news_enabled']): ?>
                 <a href="/news" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Sport News</a>
             <?php endif; ?>
+
+            <?php
+            $main_menu_pages = $conn->query("SELECT title, slug FROM pages WHERE show_in_main_menu = 1 AND status = 'published' ORDER BY title ASC");
+            while($p = $main_menu_pages->fetch_assoc()):
+            ?>
+                <a href="/p/<?php echo $p['slug']; ?>" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all"><?php echo $p['title']; ?></a>
+            <?php endwhile; ?>
+
             <a href="/#pricing" onclick="handlePricingClick(event)" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Pricing</a>
             <?php if (isset($_SESSION['user_id'])): ?>
                 <a href="/dashboard" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Dashboard</a>
@@ -115,6 +123,14 @@ $meta_key = isset($custom_seo['keywords']) ? $custom_seo['keywords'] : '';
                 <?php if ($settings['news_enabled']): ?>
                     <a href="/news" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600">Sport News</a>
                 <?php endif; ?>
+
+                <?php
+                $mobile_menu_pages = $conn->query("SELECT title, slug FROM pages WHERE show_in_main_menu = 1 AND status = 'published' ORDER BY title ASC");
+                while($p = $mobile_menu_pages->fetch_assoc()):
+                ?>
+                    <a href="/p/<?php echo $p['slug']; ?>" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600"><?php echo $p['title']; ?></a>
+                <?php endwhile; ?>
+
                 <a href="/#pricing" onclick="toggleMobileMenu(); handlePricingClick(event)" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Pricing</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <a href="/dashboard" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Dashboard</a>

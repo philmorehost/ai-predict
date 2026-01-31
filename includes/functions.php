@@ -217,7 +217,10 @@ function ensureDatabaseTablesExist($conn) {
 
     // pages updates
     $page_cols = [
-        'image_url' => "VARCHAR(255)"
+        'image_url' => "VARCHAR(255)",
+        'show_in_main_menu' => "TINYINT(1) DEFAULT 0",
+        'show_in_footer_menu' => "TINYINT(1) DEFAULT 0",
+        'show_in_news_sidebar' => "TINYINT(1) DEFAULT 0"
     ];
     foreach ($page_cols as $col => $def) {
         $check = $conn->query("SHOW COLUMNS FROM `pages` LIKE '$col'");

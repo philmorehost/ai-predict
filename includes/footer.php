@@ -3,6 +3,19 @@ $settings = getSettings($conn);
 $footer_ads = getAdsByLocation($conn, 'footer_link');
 ?>
     <footer class="mt-24 pt-12 border-t border-slate-100 dark:border-slate-800 text-center text-slate-400 text-sm">
+        <?php
+        $footer_pages = $conn->query("SELECT title, slug FROM pages WHERE show_in_footer_menu = 1 AND status = 'published' ORDER BY title ASC");
+        if ($footer_pages->num_rows > 0):
+        ?>
+            <div class="mb-6 flex flex-wrap justify-center gap-x-6 gap-y-2 px-6">
+                <?php while($p = $footer_pages->fetch_assoc()): ?>
+                    <a href="/p/<?php echo $p['slug']; ?>" class="text-xs font-bold hover:text-emerald-600 transition-colors uppercase tracking-widest">
+                        <?php echo $p['title']; ?>
+                    </a>
+                <?php endwhile; ?>
+            </div>
+        <?php endif; ?>
+
         <?php if ($footer_ads->num_rows > 0): ?>
             <div class="mb-8 flex flex-wrap justify-center gap-x-8 gap-y-4 px-6">
                 <?php while($ad = $footer_ads->fetch_assoc()): ?>
