@@ -35,6 +35,12 @@ require_once 'includes/header.php';
         <div class="h-2 w-20 bg-emerald-600 mt-6 rounded-full"></div>
     </div>
 
+    <?php if ($page_data['image_url']): ?>
+    <div class="mb-12 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
+        <img src="<?php echo $page_data['image_url']; ?>" class="w-full h-auto object-cover max-h-[500px]" alt="<?php echo $page_data['title']; ?>">
+    </div>
+    <?php endif; ?>
+
     <div class="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-16 shadow-xl border border-slate-100 dark:border-slate-800 prose prose-lg dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-headings:italic prose-a:text-emerald-600 dark:text-slate-300 leading-relaxed font-medium">
         <?php echo $page_data['content']; ?>
     </div>

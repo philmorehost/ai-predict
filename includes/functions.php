@@ -80,7 +80,7 @@ function ensureDatabaseTablesExist($conn) {
     $conn->query("CREATE TABLE IF NOT EXISTS `user_history` (`id` INT AUTO_INCREMENT PRIMARY KEY, `user_id` VARCHAR(50), `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `prediction_cache` (`id` INT AUTO_INCREMENT PRIMARY KEY, `match_hash` VARCHAR(64) UNIQUE, `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `online_transactions` (`id` INT AUTO_INCREMENT PRIMARY KEY, `visitor_id` INT, `package_id` INT, `transaction_ref` VARCHAR(100) UNIQUE, `amount` DECIMAL(10,2), `currency` VARCHAR(10), `gateway` VARCHAR(50), `status` ENUM('pending', 'success', 'failed') DEFAULT 'pending', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
-    $conn->query("CREATE TABLE IF NOT EXISTS `pages` (`id` INT AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(255) NOT NULL, `slug` VARCHAR(255) UNIQUE NOT NULL, `content` LONGTEXT, `meta_title` VARCHAR(255), `meta_description` TEXT, `meta_keywords` TEXT, `status` ENUM('draft', 'published') DEFAULT 'published', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) $charset");
+    $conn->query("CREATE TABLE IF NOT EXISTS `pages` (`id` INT AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(255) NOT NULL, `slug` VARCHAR(255) UNIQUE NOT NULL, `content` LONGTEXT, `image_url` VARCHAR(255), `meta_title` VARCHAR(255), `meta_description` TEXT, `meta_keywords` TEXT, `status` ENUM('draft', 'published') DEFAULT 'published', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) $charset");
 
     // 2. Handle Schema Updates (Columns)
     $columns = [
@@ -212,6 +212,17 @@ function ensureDatabaseTablesExist($conn) {
         $check = $conn->query("SHOW COLUMNS FROM `payment_notifications` LIKE '$col'");
         if ($check && $check->num_rows == 0) {
             $conn->query("ALTER TABLE `payment_notifications` ADD `$col` $def");
+        }
+    }
+
+    // pages updates
+    $page_cols = [
+        'image_url' => "VARCHAR(255)"
+    ];
+    foreach ($page_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `pages` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `pages` ADD `$col` $def");
         }
     }
 }

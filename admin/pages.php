@@ -17,16 +17,34 @@ if (isset($_POST['action'])) {
     $meta_description = sanitize($_POST['meta_description'] ?? '');
     $meta_keywords = sanitize($_POST['meta_keywords'] ?? '');
     $status = sanitize($_POST['status'] ?? 'published');
+    $image_url = sanitize($_POST['image_url'] ?? '');
+
+    // Handle Image Upload
+    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+        $target_dir = "../uploads/pages/";
+        if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
+        $file_ext = pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION);
+        $file_name = time() . '_' . uniqid() . '.' . $file_ext;
+        $target_file = $target_dir . $file_name;
+        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+            $image_url = 'uploads/pages/' . $file_name;
+        }
+    }
 
     if ($action == 'add') {
-        $stmt = $conn->prepare("INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssss", $title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status);
+        $stmt = $conn->prepare("INSERT INTO pages (title, slug, content, image_url, meta_title, meta_description, meta_keywords, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssss", $title, $slug, $content, $image_url, $meta_title, $meta_description, $meta_keywords, $status);
         $stmt->execute();
         $msg = 'created';
     } elseif ($action == 'edit') {
         $id = (int)$_POST['id'];
-        $stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, status = ? WHERE id = ?");
-        $stmt->bind_param("sssssssi", $title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $id);
+        if (!empty($image_url)) {
+            $stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, image_url = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, status = ? WHERE id = ?");
+            $stmt->bind_param("ssssssssi", $title, $slug, $content, $image_url, $meta_title, $meta_description, $meta_keywords, $status, $id);
+        } else {
+            $stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, status = ? WHERE id = ?");
+            $stmt->bind_param("sssssssi", $title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $id);
+        }
         $stmt->execute();
         $msg = 'updated';
     } elseif ($action == 'delete') {
@@ -89,7 +107,7 @@ if (isset($_GET['msg'])) {
         </a>
     </div>
 
-    <form method="POST" class="space-y-8">
+    <form method="POST" enctype="multipart/form-data" class="space-y-8">
         <input type="hidden" name="action" value="<?php echo $edit_item ? 'edit' : 'add'; ?>">
         <?php if ($edit_item): ?><input type="hidden" name="id" value="<?php echo $edit_item['id']; ?>"><?php endif; ?>
 
@@ -127,6 +145,25 @@ if (isset($_GET['msg'])) {
                     <div>
                         <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Meta Keywords</label>
                         <input type="text" name="meta_keywords" value="<?php echo $edit_item ? htmlspecialchars($edit_item['meta_keywords']) : ''; ?>" placeholder="comma, separated, values" class="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-3 px-5 outline-none text-sm">
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
+                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 dark:border-slate-800 pb-2">Featured Image</h4>
+                    <div class="space-y-4">
+                        <?php if ($edit_item && $edit_item['image_url']): ?>
+                            <img src="../<?php echo $edit_item['image_url']; ?>" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-slate-700">
+                        <?php endif; ?>
+
+                        <div class="flex flex-col gap-2">
+                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Upload New</label>
+                            <input type="file" name="image" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                        </div>
+
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Or Image URL</label>
+                            <input type="text" name="image_url" value="<?php echo $edit_item ? htmlspecialchars($edit_item['image_url']) : ''; ?>" placeholder="https://..." class="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2 px-4 outline-none text-xs">
+                        </div>
                     </div>
                 </div>
 
