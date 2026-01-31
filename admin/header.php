@@ -11,7 +11,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - <?php echo $settings['site_name']; ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
@@ -43,6 +43,10 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 <a href="news.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'news' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-800 hover:text-white'; ?>">
                     <i class="fas fa-newspaper"></i>
                     <span class="font-bold">News Articles</span>
+                </a>
+                <a href="pages.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'pages' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-800 hover:text-white'; ?>">
+                    <i class="fas fa-file-lines"></i>
+                    <span class="font-bold">Custom Pages</span>
                 </a>
                 <a href="categories.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'categories' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-800 hover:text-white'; ?>">
                     <i class="fas fa-tags"></i>
@@ -131,6 +135,10 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                         <a href="news.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'news' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
                             <i class="fas fa-newspaper"></i>
                             <span class="font-bold">News Articles</span>
+                        </a>
+                        <a href="pages.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'pages' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
+                            <i class="fas fa-file-lines"></i>
+                            <span class="font-bold">Custom Pages</span>
                         </a>
                         <a href="categories.php" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?php echo $current_page == 'categories' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'; ?>">
                             <i class="fas fa-tags"></i>

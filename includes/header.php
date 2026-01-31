@@ -11,6 +11,11 @@ $seo = getSeoSettings($conn);
 
 $primary_color = $settings['primary_color'] ?? '#059669';
 $site_name = $settings['site_name'] ?? 'SurePredictor';
+
+// Dynamic SEO
+$meta_title = isset($custom_seo['title']) ? $custom_seo['title'] : ($seo['meta_title'] ?: $site_name);
+$meta_desc = isset($custom_seo['description']) ? $custom_seo['description'] : $seo['meta_description'];
+$meta_key = isset($custom_seo['keywords']) ? $custom_seo['keywords'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $settings['dark_mode'] ? 'dark' : ''; ?>">
@@ -18,15 +23,18 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/">
-    <title><?php echo $seo['meta_title'] ?: $site_name; ?></title>
-    <meta name="description" content="<?php echo $seo['meta_description']; ?>">
+    <title><?php echo $meta_title; ?></title>
+    <meta name="description" content="<?php echo $meta_desc; ?>">
+    <?php if (!empty($meta_key)): ?>
+    <meta name="keywords" content="<?php echo $meta_key; ?>">
+    <?php endif; ?>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="<?php echo $primary_color; ?>">
     <link rel="apple-touch-icon" href="<?php echo $settings['site_icon'] ?: 'assets/img/icon-192.png'; ?>">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
