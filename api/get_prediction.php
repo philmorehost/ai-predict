@@ -26,6 +26,13 @@ $result = $stmt->get_result();
 if ($row = $result->fetch_assoc()) {
     // Cache for 24 hours
     if (strtotime($row['created_at']) > (time() - 86400)) {
+        // Record history for this user if logged in
+        $visitor_id = $_GET['visitor_id'] ?? '';
+        if (!empty($visitor_id)) {
+            $h_stmt = $conn->prepare("INSERT INTO user_history (user_id, home_team, away_team, result_json) VALUES (?, ?, ?, ?)");
+            $h_stmt->bind_param("ssss", $visitor_id, $home, $away, $row['result_json']);
+            $h_stmt->execute();
+        }
         echo $row['result_json'];
         exit;
     } else {
@@ -87,13 +94,18 @@ try {
     if ($visitor) {
         $new_bal = $visitor['credits'] - $settings['prediction_charge'];
         $conn->query("UPDATE visitors SET credits = $new_bal, total_predictions = total_predictions + 1 WHERE id = {$visitor['id']}");
+
+        // Record user history
+        $h_stmt = $conn->prepare("INSERT INTO user_history (user_id, home_team, away_team, result_json) VALUES (?, ?, ?, ?)");
+        $h_stmt->bind_param("ssss", $visitor_id, $home, $away, $prediction_json);
+        $h_stmt->execute();
     } else {
         $tracker->recordUsage();
     }
 
     // Save to cache
-    $stmt = $conn->prepare("INSERT INTO prediction_cache (match_hash, home_team, away_team, result_json) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $match_hash, $home, $away, $prediction_json);
+    $stmt = $conn->prepare("INSERT INTO prediction_cache (user_id, match_hash, home_team, away_team, result_json) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", $visitor_id, $match_hash, $home, $away, $prediction_json);
     $stmt->execute();
 
     echo $prediction_json;

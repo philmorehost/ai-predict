@@ -20,6 +20,10 @@ if ($action === 'login') {
     $visitor = $stmt->get_result()->fetch_assoc();
 
     if ($visitor) {
+        require_once '../includes/session_helper.php';
+        $_SESSION['user_id'] = $visitor['user_id'];
+        $_SESSION['email'] = $visitor['email'];
+        $_SESSION['full_name'] = $visitor['full_name'];
         echo json_encode(['success' => true, 'visitor' => $visitor]);
     } else {
         echo json_encode(['success' => false, 'message' => 'User ID not found.']);
@@ -55,12 +59,16 @@ if ($action === 'update_profile') {
     $user_id = $_POST['user_id'] ?? '';
     $email = $_POST['email'] ?? '';
     $phone = $_POST['phone'] ?? '';
+    $full_name = $_POST['full_name'] ?? '';
 
     if (empty($user_id)) exit;
 
-    $stmt = $conn->prepare("UPDATE visitors SET email = ?, phone = ? WHERE user_id = ?");
-    $stmt->bind_param("sss", $email, $phone, $user_id);
+    $stmt = $conn->prepare("UPDATE visitors SET email = ?, phone = ?, full_name = ? WHERE user_id = ?");
+    $stmt->bind_param("ssss", $email, $phone, $full_name, $user_id);
     if ($stmt->execute()) {
+        require_once '../includes/session_helper.php';
+        $_SESSION['email'] = $email;
+        $_SESSION['full_name'] = $full_name;
         echo json_encode(['success' => true, 'message' => 'Profile updated!']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Update failed.']);

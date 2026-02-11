@@ -42,6 +42,10 @@
                     <div class="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 font-mono text-sm text-slate-500" id="profile-vid">SP-XXXXXXXX</div>
                 </div>
                 <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-4">Full Name</label>
+                    <input type="text" id="profile-name" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-900 dark:text-white font-medium">
+                </div>
+                <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-4">Email Address</label>
                     <input type="email" id="profile-email" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-900 dark:text-white font-medium">
                 </div>
@@ -183,7 +187,23 @@
 </div>
 
 <script>
-    let activeVisitor = null;
+    let activeVisitor = <?php
+        if (isset($_SESSION['user_id'])) {
+            $s_id = $_SESSION['user_id'];
+            $stmt = $conn->prepare("SELECT * FROM visitors WHERE user_id = ?");
+            $stmt->bind_param("s", $s_id);
+            $stmt->execute();
+            echo json_encode($stmt->get_result()->fetch_assoc());
+        } else {
+            echo 'null';
+        }
+    ?>;
+
+    if (activeVisitor) {
+        window.addEventListener('load', () => {
+            updateUIForVisitor();
+        });
+    }
 
     // Visitor Logic
     function loginWithID() {
@@ -201,7 +221,7 @@
 
                     // Redirect if on login page
                     if (window.location.pathname.includes('login.php')) {
-                        window.location.href = 'index.php';
+                        window.location.href = 'dashboard.php';
                     }
                 } else {
                     alert(data.message);
@@ -216,10 +236,13 @@
         if (document.getElementById('nav-login-btn')) document.getElementById('nav-login-btn').classList.add('hidden');
         if (document.getElementById('user-credits')) document.getElementById('user-credits').innerText = parseFloat(activeVisitor.credits).toFixed(2);
         if (document.getElementById('user-stats-preds')) document.getElementById('user-stats-preds').innerText = activeVisitor.total_predictions || 0;
-        if (document.getElementById('user-initials')) document.getElementById('user-initials').innerText = activeVisitor.user_id.substring(3, 5);
+        if (document.getElementById('user-initials')) {
+            const initials = activeVisitor.full_name ? activeVisitor.full_name.split(' ').map(n => n[0]).join('').substring(0, 2) : activeVisitor.user_id.substring(3, 5);
+            document.getElementById('user-initials').innerText = initials.toUpperCase();
+        }
 
         // Show a stats card if they're on the homepage
-        if (window.location.pathname.includes('index.php') || window.location.pathname.endsWith('/') || window.location.pathname === '') {
+        if (window.location.pathname.includes('index.php') || window.location.pathname.endsWith('/') || window.location.pathname === '' || window.location.pathname.includes('dashboard.php')) {
             if (!document.getElementById('premium-stats-card')) {
                 const statsCard = document.createElement('div');
                 statsCard.id = 'premium-stats-card';
@@ -256,6 +279,7 @@
     function showProfile() {
         if (!activeVisitor) return;
         document.getElementById('profile-vid').innerText = activeVisitor.user_id;
+        document.getElementById('profile-name').value = activeVisitor.full_name || '';
         document.getElementById('profile-email').value = activeVisitor.email || '';
         document.getElementById('profile-phone').value = activeVisitor.phone || '';
         document.getElementById('profile-modal').classList.remove('hidden');
@@ -269,6 +293,7 @@
     }
 
     function saveProfile() {
+        const full_name = document.getElementById('profile-name').value;
         const email = document.getElementById('profile-email').value;
         const phone = document.getElementById('profile-phone').value;
         const btn = document.getElementById('save-profile-btn');
@@ -279,6 +304,7 @@
 
         const formData = new FormData();
         formData.append('user_id', activeVisitor.user_id);
+        formData.append('full_name', full_name);
         formData.append('email', email);
         formData.append('phone', phone);
 
@@ -289,9 +315,10 @@
                 if (data.success) {
                     notif.classList.add('bg-emerald-50', 'text-emerald-600');
                     notif.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                    activeVisitor.full_name = full_name;
                     activeVisitor.email = email;
                     activeVisitor.phone = phone;
-                    setTimeout(() => hideProfileModal(), 1500);
+                    setTimeout(() => location.reload(), 1500);
                 } else {
                     notif.classList.add('bg-red-50', 'text-red-600');
                     notif.innerHTML = '<i class="fas fa-circle-exclamation"></i> ' + data.message;
@@ -468,7 +495,7 @@
 
     // Auto-login if ID in storage
     const storedID = localStorage.getItem('visitor_id');
-    if (storedID) {
+    if (storedID && !activeVisitor) {
         const idInput = document.getElementById('visitor-id-input');
         if (idInput) idInput.value = storedID;
 
