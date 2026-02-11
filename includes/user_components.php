@@ -1,5 +1,5 @@
 <!-- User Profile Bar (Sticky Top) -->
-<div id="user-bar" class="hidden fixed top-0 left-0 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-[100] border-b border-slate-100 dark:border-slate-800 shadow-sm animate-in slide-in-from-top duration-500">
+<div id="user-bar" class="hidden fixed top-0 left-0 w-full bg-white dark:bg-slate-900 z-[100] border-b border-slate-100 dark:border-slate-800 shadow-sm animate-in slide-in-from-top duration-500">
     <div class="max-w-5xl mx-auto px-6 py-3 flex justify-between items-center">
         <div class="flex items-center gap-4">
             <div class="h-10 w-10 bg-emerald-600 rounded-full flex items-center justify-center text-white font-black text-sm" id="user-initials">SP</div>
@@ -26,7 +26,7 @@
 </div>
 
 <!-- Profile Modal -->
-<div id="profile-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center hidden p-4">
+<div id="profile-modal" class="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center hidden p-4">
     <div class="bg-white dark:bg-slate-800 rounded-[3rem] max-w-md w-full shadow-2xl animate-in zoom-in duration-300">
         <div class="p-8 md:p-10">
             <div class="flex justify-between items-center mb-8">
@@ -64,7 +64,7 @@
 </div>
 
 <!-- Subscription Modal -->
-<div id="subscribe-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center hidden p-4">
+<div id="subscribe-modal" class="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center hidden p-4">
     <div class="bg-white dark:bg-slate-800 rounded-[3rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in duration-300">
         <div class="p-8 md:p-12">
             <div class="flex justify-between items-start mb-8">
@@ -211,7 +211,7 @@
         const id = idInput ? idInput.value : null;
         if (!id) return;
 
-        fetch(`api/auth.php?action=login&user_id=${encodeURIComponent(id)}`)
+        fetch(`/api/auth?action=login&user_id=${encodeURIComponent(id)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -270,7 +270,7 @@
     function showResetID() {
         const email = prompt("Enter your registered email to recover your Visitor ID:");
         if (email) {
-            fetch(`api/auth.php?action=reset&email=${encodeURIComponent(email)}`)
+            fetch(`/api/auth?action=reset&email=${encodeURIComponent(email)}`)
                 .then(res => res.json())
                 .then(data => alert(data.message));
         }
@@ -308,7 +308,7 @@
         formData.append('email', email);
         formData.append('phone', phone);
 
-        fetch('api/auth.php?action=update_profile', { method: 'POST', body: formData })
+        fetch('/api/auth?action=update_profile', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 notif.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'bg-emerald-50', 'text-emerald-600');
@@ -381,7 +381,7 @@
         formData.append('phone', p);
         formData.append('package_id', currentSelectedPkg.id);
 
-        fetch('api/payment.php?action=create_order', { method: 'POST', body: formData })
+        fetch('/api/payment?action=create_order', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -446,7 +446,7 @@
     }
 
     function verifyPayment(ref, provider) {
-        fetch(`api/payment.php?action=verify_payment&ref=${ref}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}&provider=${provider}`)
+        fetch(`/api/payment?action=verify_payment&ref=${ref}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}&provider=${provider}`)
             .then(res => res.json()).then(d => {
                 alert(d.message);
                 if (d.success) {
@@ -478,7 +478,7 @@
         fd.append('currency', 'USD');
         fd.append('proof', file);
 
-        fetch('api/payment.php?action=bank_transfer', { method: 'POST', body: fd })
+        fetch('/api/payment?action=bank_transfer', { method: 'POST', body: fd })
             .then(res => res.json())
             .then(data => {
                 alert(data.message);
@@ -499,7 +499,7 @@
         const idInput = document.getElementById('visitor-id-input');
         if (idInput) idInput.value = storedID;
 
-        fetch(`api/auth.php?action=login&user_id=${encodeURIComponent(storedID)}`)
+        fetch(`/api/auth?action=login&user_id=${encodeURIComponent(storedID)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {

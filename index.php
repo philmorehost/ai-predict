@@ -29,11 +29,13 @@ $last_predictions = $conn->query("SELECT * FROM prediction_cache ORDER BY create
     <!-- Header -->
     <header class="text-center mb-16 space-y-4">
         <h1 class="text-4xl md:text-6xl font-black tracking-tight text-slate-900 dark:text-white">
+            <a href="/">
             <?php
                 $name_parts = explode('.', $settings['site_name'] ?: 'surepredictor.com');
                 echo $name_parts[0];
                 if (isset($name_parts[1])) echo '<span class="text-emerald-600">.' . $name_parts[1] . '</span>';
             ?>
+            </a>
         </h1>
         <p class="text-slate-500 dark:text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-light">
             <?php echo $settings['site_description']; ?>

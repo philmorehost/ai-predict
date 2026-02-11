@@ -54,7 +54,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     btn.disabled = true;
     btn.innerText = 'Logging in...';
 
-    fetch('api/user_auth.php?action=login', {
+    fetch('/api/user_auth?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -78,9 +78,6 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     });
 });
 
-if (localStorage.getItem('visitor_id')) {
-    window.location.href = 'dashboard.php';
-}
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

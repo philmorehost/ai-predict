@@ -283,7 +283,7 @@ function testAIConnection(p) {
     fd.append('provider', p);
     fd.append('base_url', url);
 
-    fetch(`../api/test_ai.php`, { method: 'POST', body: fd })
+    fetch(`../api/test_ai`, { method: 'POST', body: fd })
         .then(r => r.json()).then(d => { alert(`[${p.toUpperCase()}] ${d.message}`); btn.innerText = 'Test ' + p; });
 }
 </script>

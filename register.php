@@ -41,9 +41,6 @@ require_once 'includes/header.php';
 </div>
 
 <script>
-if (localStorage.getItem('visitor_id')) {
-    window.location.href = 'dashboard.php';
-}
 document.getElementById('register-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
@@ -60,7 +57,7 @@ document.getElementById('register-form').addEventListener('submit', function(e) 
     btn.disabled = true;
     btn.innerText = 'Creating account...';
 
-    fetch('api/user_auth.php?action=register', {
+    fetch('/api/user_auth?action=register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -68,7 +65,7 @@ document.getElementById('register-form').addEventListener('submit', function(e) 
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            localStorage.setItem('visitor_id', data.user_id);
+            localStorage.setItem('visitor_id', data.user['user_id']);
             window.location.href = 'dashboard.php';
         } else {
             alert(data.message);
