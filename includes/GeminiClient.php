@@ -101,23 +101,26 @@ class GeminiClient {
         $payload = [
             "contents" => [[
                 "parts" => [[
-                    "text" => "Perform a deep tactical analysis for $home (Home) vs $away (Away) for the $season season.
-                    Verify their $season league membership and latest squad transfers.
+                    "text" => "Perform a high-precision tactical analysis for $home (Home) vs $away (Away) for the $season season.
+                    Your goal is maximum accuracy based on current squad data, recent form, and historical trends.
+
+                    OUTPUT FORMATTING:
+                    - Use standard betting notation for the main outcome: Home (1), Draw (X), or Away (2).
+                    - Example: 'Home (1)' or 'Draw (X)' or 'Away (2)'.
 
                     CRITICAL PROBABILITY GUIDELINES:
                     - Provide a probability percentage from 1 to 100.
-                    - 50% means a coin flip.
-                    - 70-80% is high confidence.
-                    - 90%+ is near certain.
-                    - Use whole numbers for clarity.
+                    - 90%+ indicates extreme confidence.
+                    - Use whole numbers.
 
-                    Provide:
-                    1. Main outcome (1X2)
-                    2. Over/Under 2.5 goals prediction
-                    3. Probabilities for both (1-100)
-                    4. Detailed reasoning including tactical shifts for the $season campaign
-                    5. Expected final score
-                    6. Key match stats for $season."
+                    Provide a comprehensive report as JSON:
+                    1. mainPrediction: The outcome using (1), (X), or (2) notation.
+                    2. mainProbability: Confidence level (1-100).
+                    3. overUnderPrediction: Over/Under 2.5 goals forecast.
+                    4. overUnderProbability: Confidence level (1-100).
+                    5. reasoning: Extremely detailed tactical breakdown, including key player match-ups, expected formations, and managerial strategies for $season.
+                    6. expectedScore: The most likely final scoreline.
+                    7. keyStats: At least 5 critical match statistics supporting your analysis."
                 ]]
             ]],
             "generationConfig" => [
