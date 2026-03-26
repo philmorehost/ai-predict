@@ -131,6 +131,7 @@
             $flutterwave_active = !empty($settings['flutterwave_public_key']) && !empty($settings['flutterwave_secret_key']);
             $beewave_active = !empty($settings['beewave_access_key']);
             $paypal_active = !empty($settings['paypal_client_id']);
+            $payhub_active = !empty($settings['payhub_public_key']);
             ?>
             <div id="payment-method-step" class="hidden max-w-md mx-auto space-y-8 py-10">
                 <div class="text-center">
@@ -168,6 +169,16 @@
                     </button>
                     <?php endif; ?>
 
+                    <?php if ($payhub_active): ?>
+                    <button onclick="payWithPayhub()" class="p-6 bg-purple-600 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                        <div class="text-left">
+                            <div class="font-black italic uppercase tracking-tight">PayHub</div>
+                            <div class="text-[10px] opacity-60">Cards, Transfer, USSD</div>
+                        </div>
+                        <i class="fas fa-layer-group text-2xl"></i>
+                    </button>
+                    <?php endif; ?>
+
                     <?php if ($paypal_active): ?>
                     <div id="paypal-button-container" class="w-full"></div>
                     <script>
@@ -196,6 +207,16 @@
                     </script>
                     <?php endif; ?>
 
+                    <?php if ($payhub_active): ?>
+                    <button onclick="showPayhubVirtualAccount()" class="p-6 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                        <div class="text-left">
+                            <div class="font-black italic uppercase tracking-tight">Automated Deposit</div>
+                            <div class="text-[10px] opacity-60">Personal Virtual Bank Account</div>
+                        </div>
+                        <i class="fas fa-piggy-bank text-2xl"></i>
+                    </button>
+                    <?php endif; ?>
+
                     <button onclick="showBankTransferUI()" class="p-6 bg-white dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500 transition-all">
                         <div class="text-left">
                             <div class="font-black italic uppercase tracking-tight text-slate-900 dark:text-white">Bank Transfer</div>
@@ -207,7 +228,26 @@
                 <button onclick="showPricing()" class="w-full text-slate-400 font-bold text-xs mt-4 underline">Cancel</button>
             </div>
 
-            <!-- Step 4: Bank Transfer Details -->
+            <!-- Step 4: PayHub Virtual Account -->
+            <div id="payhub-virtual-step" class="hidden max-w-xl mx-auto space-y-8 py-6">
+                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-8 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-800">
+                    <h3 class="text-xl font-black text-indigo-800 dark:text-indigo-400 mb-6 uppercase tracking-tighter">Your Personal Virtual Account</h3>
+
+                    <div id="payhub-account-details" class="space-y-6">
+                        <div class="animate-pulse flex flex-col items-center gap-4">
+                            <div class="h-4 w-48 bg-indigo-200 rounded"></div>
+                            <div class="h-8 w-64 bg-indigo-200 rounded"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 p-4 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-white/80 dark:border-slate-700/80">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Transfer any amount to the account details above. Your SurePredictor credits will be updated <b>automatically</b> and <b>instantly</b> upon receipt.</p>
+                    </div>
+                </div>
+                <button onclick="showPaymentMethods()" class="w-full text-slate-400 font-bold text-xs underline">Back to Payment Methods</button>
+            </div>
+
+            <!-- Step 5: Bank Transfer Details -->
             <div id="bank-transfer-step" class="hidden max-w-xl mx-auto space-y-8 py-6">
                 <div class="bg-emerald-50 dark:bg-emerald-900/20 p-8 rounded-[2.5rem] border border-emerald-100 dark:border-emerald-800">
                     <h3 class="text-xl font-black text-emerald-800 dark:text-emerald-400 mb-6 uppercase tracking-tighter">Bank Instructions</h3>
@@ -291,6 +331,42 @@
                     if (window.location.pathname.includes('login.php')) {
                         window.location.href = 'dashboard.php';
                     }
+                } else {
+                    alert(data.message);
+                }
+            });
+    }
+
+    function payWithPayhub() {
+        const amount_ngn = currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?>;
+        const cleanPhone = sanitizePhone(currentOrder.phone);
+
+        const formData = new FormData();
+        formData.append('v_id', currentOrder.visitor_id);
+        formData.append('package_id', currentSelectedPkg.id);
+        formData.append('gateway', 'payhub');
+        formData.append('amount', amount_ngn);
+        formData.append('currency', 'NGN');
+        formData.append('email', currentOrder.email);
+        formData.append('phone', cleanPhone);
+
+        fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    let handler = PayhubPop.setup({
+                        key: '<?php echo $settings['payhub_public_key']; ?>',
+                        email: currentOrder.email,
+                        amount: amount_ngn * 100,
+                        ref: data.ref,
+                        onClose: function(){
+                            console.log("PayHub Window closed.");
+                        },
+                        callback: function(response){
+                            verifyPayment(response.reference, 'payhub');
+                        }
+                    });
+                    handler.openIframe();
                 } else {
                     alert(data.message);
                 }
@@ -418,6 +494,7 @@
         document.getElementById('contact-step').classList.add('hidden');
         document.getElementById('payment-method-step').classList.add('hidden');
         document.getElementById('bank-transfer-step').classList.add('hidden');
+        if (document.getElementById('payhub-virtual-step')) document.getElementById('payhub-virtual-step').classList.add('hidden');
     }
 
     function showPricing() {
@@ -607,6 +684,49 @@
                     alert(data.message);
                 }
             });
+    }
+
+    function showPayhubVirtualAccount() {
+        hideAllSteps();
+        document.getElementById('payhub-virtual-step').classList.remove('hidden');
+        const container = document.getElementById('payhub-account-details');
+
+        fetch(`/api/payment?action=fetch_payhub_account&v_id=${currentOrder.visitor_id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    container.innerHTML = `
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="p-6 bg-white dark:bg-slate-800 rounded-3xl border border-indigo-100 dark:border-indigo-900/50 relative group">
+                                <div class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Bank Name</div>
+                                <div class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">${data.bank_name}</div>
+                            </div>
+                            <div class="p-6 bg-white dark:bg-slate-800 rounded-3xl border border-indigo-100 dark:border-indigo-900/50 relative group">
+                                <div class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Account Number</div>
+                                <div class="flex items-center justify-between">
+                                    <div class="text-3xl font-black text-indigo-600 font-mono tracking-tighter">${data.account_number}</div>
+                                    <button onclick="copyToClipboard('${data.account_number}', this)" class="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="p-6 bg-white dark:bg-slate-800 rounded-3xl border border-indigo-100 dark:border-indigo-900/50 relative group">
+                                <div class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Account Name</div>
+                                <div class="text-lg font-bold text-slate-700 dark:text-slate-300">${data.account_name}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `<div class="p-6 bg-red-50 text-red-600 rounded-2xl text-center font-bold">${data.message}</div>`;
+                }
+            });
+    }
+
+    function copyToClipboard(text, btn) {
+        navigator.clipboard.writeText(text);
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
     }
 
     function verifyPayment(ref, provider) {

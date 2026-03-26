@@ -52,9 +52,11 @@ $meta_key = isset($custom_seo['keywords']) ? $custom_seo['keywords'] : '';
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <script src="https://checkout.flutterwave.com/v3.js"></script>
     <script src="https://merchant.beewave.ng/checkout.min.js"></script>
+    <script src="https://payhub.datagifting.com.ng/inline.js"></script>
     <?php if (!empty($settings['paypal_client_id'])): ?>
         <script src="https://www.paypal.com/sdk/js?client-id=<?php echo $settings['paypal_client_id']; ?>&currency=USD"></script>
     <?php endif; ?>
+    <?php echo $settings['custom_header_code']; ?>
     <style>
         @keyframes roll {
             from { transform: rotate(0deg); }

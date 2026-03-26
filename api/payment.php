@@ -92,6 +92,7 @@ if ($action === 'initiate_transaction') {
     $phone = $_POST['phone'] ?? '';
 
     $ref = strtoupper($gateway[0]) . '_' . bin2hex(random_bytes(8));
+    if ($gateway === 'payhub') $ref = 'PH_' . bin2hex(random_bytes(8));
 
     $stmt = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("iisdssss", $v_id, $pkg_id, $ref, $amount, $currency, $gateway, $email, $phone);
@@ -135,6 +136,17 @@ if ($action === 'verify_payment') {
         if ($response && $response['status'] === 'success' && $response['data']['status'] === 'successful') {
             $verified = true;
             $merchant_ref = $response['data']['tx_ref'];
+        }
+    } elseif ($provider === 'payhub') {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://payhub.datagifting.com.ng/api/transaction/verify/" . rawurlencode($ref));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer " . $settings['payhub_secret_key']]);
+        $response = json_decode(curl_exec($ch), true);
+        curl_close($ch);
+        if ($response && $response['status'] === 'success' && $response['data']['status'] === 'success') {
+            $verified = true;
+            $merchant_ref = $response['data']['reference'];
         }
     }
 
@@ -240,6 +252,94 @@ if ($action === 'verify_paypal') {
         }
     } else {
         echo json_encode(['success' => false, 'message' => 'Package not found.']);
+    }
+}
+
+if ($action === 'fetch_payhub_account') {
+    $v_id = (int)$_GET['v_id'];
+
+    $stmt = $conn->prepare("SELECT email, phone, full_name, username, payhub_account_number, payhub_bank_name, payhub_account_name FROM visitors WHERE id = ?");
+    $stmt->bind_param("i", $v_id);
+    $stmt->execute();
+    $visitor = $stmt->get_result()->fetch_assoc();
+
+    if (!$visitor) {
+        echo json_encode(['success' => false, 'message' => 'Visitor not found.']);
+        exit;
+    }
+
+    // Return cached account if it exists
+    if (!empty($visitor['payhub_account_number'])) {
+        echo json_encode([
+            'success' => true,
+            'account_number' => $visitor['payhub_account_number'],
+            'bank_name' => $visitor['payhub_bank_name'],
+            'account_name' => $visitor['payhub_account_name']
+        ]);
+        exit;
+    }
+
+    $settings = getSettings($conn);
+    $email = $visitor['email'];
+    $phone = $visitor['phone'] ?: '08000000000';
+    $name = $visitor['full_name'] ?: ($visitor['username'] ?: 'Customer');
+
+    // Initialize transaction to trigger virtual account generation
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://payhub.datagifting.com.ng/api/transaction/initialize");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    $fields = [
+        'email' => $email,
+        'amount' => 10000, // Dummy amount for initialization
+        'name' => $name,
+        'phone' => $phone
+    ];
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($fields));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer " . $settings['payhub_secret_key']]);
+    $init_res = json_decode(curl_exec($ch), true);
+    curl_close($ch);
+
+    // After initialization, fetch the virtual account
+    // Try to fetch specific account first if possible, otherwise list all
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://payhub.datagifting.com.ng/api/virtual-accounts");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer " . $settings['payhub_secret_key']]);
+    $accounts_res = json_decode(curl_exec($ch), true);
+    curl_close($ch);
+
+    if ($accounts_res && $accounts_res['status'] === 'success' && !empty($accounts_res['data'])) {
+        // Find the account for this email
+        $found_acc = null;
+        foreach ($accounts_res['data'] as $acc) {
+            if ($acc['email'] === $email) {
+                $found_acc = $acc;
+                break;
+            }
+        }
+
+        if ($found_acc) {
+            $acc_num = $found_acc['account_number'];
+            $bank = $found_acc['bank_name'];
+            $acc_name = $found_acc['account_name'];
+
+            // Cache it
+            $upd = $conn->prepare("UPDATE visitors SET payhub_account_number = ?, payhub_bank_name = ?, payhub_account_name = ? WHERE id = ?");
+            $upd->bind_param("sssi", $acc_num, $bank, $acc_name, $v_id);
+            $upd->execute();
+
+            echo json_encode([
+                'success' => true,
+                'account_number' => $acc_num,
+                'bank_name' => $bank,
+                'account_name' => $acc_name
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Virtual account not found for this email.']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to fetch virtual accounts from PayHub.']);
     }
 }
 ?>

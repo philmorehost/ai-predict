@@ -121,7 +121,10 @@ function ensureDatabaseTablesExist($conn) {
         'beewave_access_key' => "VARCHAR(255)",
         'paypal_client_id' => "VARCHAR(255)",
         'paypal_secret_key' => "VARCHAR(255)",
-        'paypal_mode' => "VARCHAR(20) DEFAULT 'sandbox'"
+        'paypal_mode' => "VARCHAR(20) DEFAULT 'sandbox'",
+        'payhub_public_key' => "VARCHAR(255)",
+        'payhub_secret_key' => "VARCHAR(255)",
+        'custom_header_code' => "TEXT"
     ];
 
     $visitor_cols = [
@@ -129,7 +132,10 @@ function ensureDatabaseTablesExist($conn) {
         'password_hash' => "VARCHAR(255)",
         'full_name' => "VARCHAR(255)",
         'username' => "VARCHAR(100)",
-        'status' => "ENUM('active', 'suspended') DEFAULT 'active'"
+        'status' => "ENUM('active', 'suspended') DEFAULT 'active'",
+        'payhub_account_number' => "VARCHAR(20)",
+        'payhub_bank_name' => "VARCHAR(100)",
+        'payhub_account_name' => "VARCHAR(255)"
     ];
 
     foreach ($visitor_cols as $col => $def) {
