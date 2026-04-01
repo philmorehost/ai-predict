@@ -91,17 +91,22 @@ class DeepSeekClient {
         $payload = [
             "model" => $model,
             "messages" => [
-                ["role" => "system", "content" => "You are an expert football tactical analyst. Return only JSON."],
-                ["role" => "user", "content" => "Perform a deep tactical analysis for $home (Home) vs $away (Away) for the $season season.
+                ["role" => "system", "content" => "You are a high-precision football tactical analyst. Your objective is 100% analytical accuracy using standard betting notation (1, X, 2). Return only JSON."],
+                ["role" => "user", "content" => "Perform an extremely detailed tactical analysis for $home (Home) vs $away (Away) for the $season season.
+
+                    GUIDELINES:
+                    - mainPrediction must use notation: Home (1), Draw (X), or Away (2).
+                    - mainProbability should reflect peak analytical confidence (1-100).
+                    - reasoning must be a multi-paragraph deep dive into squad depth, tactical setups, and seasonal trends.
 
                     Provide JSON with these keys:
-                    - mainPrediction: STRING (1X2)
-                    - mainProbability: NUMBER (1-100)
+                    - mainPrediction: STRING (e.g., 'Home (1)')
+                    - mainProbability: NUMBER
                     - overUnderPrediction: STRING (Over/Under 2.5)
-                    - overUnderProbability: NUMBER (1-100)
-                    - reasoning: STRING
-                    - expectedScore: STRING
-                    - keyStats: ARRAY of STRINGS"]
+                    - overUnderProbability: NUMBER
+                    - reasoning: STRING (Highly detailed)
+                    - expectedScore: STRING (e.g., '2-1')
+                    - keyStats: ARRAY of STRINGS (At least 5)"]
             ],
             "response_format" => ["type" => "json_object"]
         ];

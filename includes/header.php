@@ -11,6 +11,11 @@ $seo = getSeoSettings($conn);
 
 $primary_color = $settings['primary_color'] ?? '#059669';
 $site_name = $settings['site_name'] ?? 'SurePredictor';
+
+// Dynamic SEO
+$meta_title = isset($custom_seo['title']) ? $custom_seo['title'] : ($seo['meta_title'] ?: $site_name);
+$meta_desc = isset($custom_seo['description']) ? $custom_seo['description'] : $seo['meta_description'];
+$meta_key = isset($custom_seo['keywords']) ? $custom_seo['keywords'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $settings['dark_mode'] ? 'dark' : ''; ?>">
@@ -18,15 +23,18 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/">
-    <title><?php echo $seo['meta_title'] ?: $site_name; ?></title>
-    <meta name="description" content="<?php echo $seo['meta_description']; ?>">
+    <title><?php echo $meta_title; ?></title>
+    <meta name="description" content="<?php echo $meta_desc; ?>">
+    <?php if (!empty($meta_key)): ?>
+    <meta name="keywords" content="<?php echo $meta_key; ?>">
+    <?php endif; ?>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="<?php echo $primary_color; ?>">
     <link rel="apple-touch-icon" href="<?php echo $settings['site_icon'] ?: 'assets/img/icon-192.png'; ?>">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -43,6 +51,10 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <script src="https://checkout.flutterwave.com/v3.js"></script>
+    <script src="https://merchant.beewave.ng/checkout.min.js"></script>
+    <?php if (!empty($settings['paypal_client_id'])): ?>
+        <script src="https://www.paypal.com/sdk/js?client-id=<?php echo $settings['paypal_client_id']; ?>&currency=USD"></script>
+    <?php endif; ?>
     <style>
         @keyframes roll {
             from { transform: rotate(0deg); }
@@ -77,6 +89,14 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
             <?php if ($settings['news_enabled']): ?>
                 <a href="/news" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Sport News</a>
             <?php endif; ?>
+
+            <?php
+            $main_menu_pages = $conn->query("SELECT title, slug FROM pages WHERE show_in_main_menu = 1 AND status = 'published' ORDER BY title ASC");
+            while($p = $main_menu_pages->fetch_assoc()):
+            ?>
+                <a href="/p/<?php echo $p['slug']; ?>" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all"><?php echo $p['title']; ?></a>
+            <?php endwhile; ?>
+
             <a href="/#pricing" onclick="handlePricingClick(event)" class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all">Pricing</a>
             <?php if (isset($_SESSION['user_id'])): ?>
                 <a href="/dashboard" class="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">Dashboard</a>
@@ -103,6 +123,14 @@ $site_name = $settings['site_name'] ?? 'SurePredictor';
                 <?php if ($settings['news_enabled']): ?>
                     <a href="/news" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600">Sport News</a>
                 <?php endif; ?>
+
+                <?php
+                $mobile_menu_pages = $conn->query("SELECT title, slug FROM pages WHERE show_in_main_menu = 1 AND status = 'published' ORDER BY title ASC");
+                while($p = $mobile_menu_pages->fetch_assoc()):
+                ?>
+                    <a href="/p/<?php echo $p['slug']; ?>" class="block text-lg font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600"><?php echo $p['title']; ?></a>
+                <?php endwhile; ?>
+
                 <a href="/#pricing" onclick="toggleMobileMenu(); handlePricingClick(event)" class="block text-lg font-bold text-slate-600 dark:text-slate-300">Pricing</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <a href="/dashboard" onclick="toggleMobileMenu()" class="block text-lg font-bold text-emerald-600">Dashboard</a>

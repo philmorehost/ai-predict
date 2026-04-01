@@ -79,6 +79,17 @@ function ensureDatabaseTablesExist($conn) {
     $conn->query("CREATE TABLE IF NOT EXISTS `ads` (`id` INT AUTO_INCREMENT PRIMARY KEY, `slot_name` VARCHAR(50), `ad_code` TEXT, `is_active` BOOLEAN DEFAULT TRUE) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `user_history` (`id` INT AUTO_INCREMENT PRIMARY KEY, `user_id` VARCHAR(50), `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
     $conn->query("CREATE TABLE IF NOT EXISTS `prediction_cache` (`id` INT AUTO_INCREMENT PRIMARY KEY, `match_hash` VARCHAR(64) UNIQUE, `home_team` VARCHAR(100), `away_team` VARCHAR(100), `result_json` LONGTEXT, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
+    $conn->query("CREATE TABLE IF NOT EXISTS `online_transactions` (`id` INT AUTO_INCREMENT PRIMARY KEY, `visitor_id` INT, `package_id` INT, `transaction_ref` VARCHAR(100) UNIQUE, `amount` DECIMAL(10,2), `currency` VARCHAR(10), `gateway` VARCHAR(50), `status` ENUM('pending', 'success', 'failed') DEFAULT 'pending', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP) $charset");
+    $conn->query("CREATE TABLE IF NOT EXISTS `pages` (`id` INT AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(255) NOT NULL, `slug` VARCHAR(255) UNIQUE NOT NULL, `content` LONGTEXT, `image_url` VARCHAR(255), `meta_title` VARCHAR(255), `meta_description` TEXT, `meta_keywords` TEXT, `status` ENUM('draft', 'published') DEFAULT 'published', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) $charset");
+
+    // Default Privacy Policy
+    $check_pp = $conn->query("SELECT id FROM pages WHERE slug = 'privacy-policy'");
+    if ($check_pp && $check_pp->num_rows == 0) {
+        $pp_content = "<h2>1. Introduction</h2><p>Welcome to SurePredictor. We respect your privacy and want to protect your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website.</p><h2>2. The Data We Collect</h2><p>We may collect, use, store and transfer different kinds of personal data about you which we have grouped together as follows:</p><ul><li>Identity Data includes first name, last name, username or similar identifier.</li><li>Contact Data includes email address and telephone numbers.</li><li>Technical Data includes internet protocol (IP) address, your login data, browser type and version, time zone setting and location, browser plug-in types and versions, operating system and platform.</li><li>Usage Data includes information about how you use our website and services.</li></ul><h2>3. How We Use Your Data</h2><p>We will only use your personal data when the law allows us to. Most commonly, we will use your personal data in the following circumstances:</p><ul><li>Where we need to perform the contract we are about to enter into or have entered into with you.</li><li>Where it is necessary for our legitimate interests and your interests and fundamental rights do not override those interests.</li><li>Where we need to comply with a legal obligation.</li></ul><h2>4. Data Security</h2><p>We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way, altered or disclosed.</p><h2>5. Your Legal Rights</h2><p>Under certain circumstances, you have rights under data protection laws in relation to your personal data, including the right to request access, correction, erasure, restriction, transfer, to object to processing, and the right to withdraw consent.</p>";
+        $stmt = $conn->prepare("INSERT INTO pages (title, slug, content, meta_title, meta_description, status, show_in_footer_menu) VALUES ('Privacy Policy', 'privacy-policy', ?, 'Privacy Policy - SurePredictor', 'Our commitment to protecting your data and privacy.', 'published', 1)");
+        $stmt->bind_param("s", $pp_content);
+        $stmt->execute();
+    }
 
     // 2. Handle Schema Updates (Columns)
     $columns = [
@@ -106,7 +117,11 @@ function ensureDatabaseTablesExist($conn) {
         'bank_details_kes' => "TEXT",
         'ad_expiry_date' => "DATE",
         'news_enabled' => "TINYINT(1) DEFAULT 1",
-        'history_enabled' => "TINYINT(1) DEFAULT 1"
+        'history_enabled' => "TINYINT(1) DEFAULT 1",
+        'beewave_access_key' => "VARCHAR(255)",
+        'paypal_client_id' => "VARCHAR(255)",
+        'paypal_secret_key' => "VARCHAR(255)",
+        'paypal_mode' => "VARCHAR(20) DEFAULT 'sandbox'"
     ];
 
     $visitor_cols = [
@@ -180,6 +195,47 @@ function ensureDatabaseTablesExist($conn) {
     $check_cache = $conn->query("SHOW COLUMNS FROM `prediction_cache` LIKE 'user_id'");
     if ($check_cache && $check_cache->num_rows == 0) {
         $conn->query("ALTER TABLE `prediction_cache` ADD `user_id` VARCHAR(50) AFTER `id` ");
+    }
+
+    // online_transactions updates
+    $ot_cols = [
+        'email' => "VARCHAR(255)",
+        'phone' => "VARCHAR(50)",
+        'is_disputed' => "TINYINT(1) DEFAULT 0",
+        'dispute_reason' => "TEXT",
+        'api_ref' => "VARCHAR(100)"
+    ];
+    foreach ($ot_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `online_transactions` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `online_transactions` ADD `$col` $def");
+        }
+    }
+
+    // payment_notifications updates
+    $pn_cols = [
+        'is_disputed' => "TINYINT(1) DEFAULT 0",
+        'dispute_reason' => "TEXT"
+    ];
+    foreach ($pn_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `payment_notifications` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `payment_notifications` ADD `$col` $def");
+        }
+    }
+
+    // pages updates
+    $page_cols = [
+        'image_url' => "VARCHAR(255)",
+        'show_in_main_menu' => "TINYINT(1) DEFAULT 0",
+        'show_in_footer_menu' => "TINYINT(1) DEFAULT 0",
+        'show_in_news_sidebar' => "TINYINT(1) DEFAULT 0"
+    ];
+    foreach ($page_cols as $col => $def) {
+        $check = $conn->query("SHOW COLUMNS FROM `pages` LIKE '$col'");
+        if ($check && $check->num_rows == 0) {
+            $conn->query("ALTER TABLE `pages` ADD `$col` $def");
+        }
     }
 }
 

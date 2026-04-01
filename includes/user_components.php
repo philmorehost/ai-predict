@@ -15,6 +15,9 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <a href="purchases.php" class="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fas fa-history text-slate-600 dark:text-slate-400"></i>
+            </a>
             <button onclick="showProfile()" class="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
                 <i class="fas fa-user-gear text-slate-600 dark:text-slate-400"></i>
             </button>
@@ -114,8 +117,8 @@
                         <input type="email" id="purchase-email" placeholder="name@example.com" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Phone Number</label>
-                        <input type="tel" id="purchase-phone" placeholder="+123..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-4">Phone Number (11 Digits Required)</label>
+                        <input type="tel" id="purchase-phone" placeholder="e.g. 08012345678" maxlength="11" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-emerald-500/20">
                     </div>
                     <button onclick="submitContactInfo()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg shadow-emerald-600/20">Continue to Payment</button>
                     <button onclick="showPricing()" class="w-full text-slate-400 font-bold text-xs">Back to Packages</button>
@@ -123,19 +126,76 @@
             </div>
 
             <!-- Step 3: Payment Method Selection -->
+            <?php
+            $paystack_active = !empty($settings['paystack_public_key']) && !empty($settings['paystack_secret_key']);
+            $flutterwave_active = !empty($settings['flutterwave_public_key']) && !empty($settings['flutterwave_secret_key']);
+            $beewave_active = !empty($settings['beewave_access_key']);
+            $paypal_active = !empty($settings['paypal_client_id']);
+            ?>
             <div id="payment-method-step" class="hidden max-w-md mx-auto space-y-8 py-10">
                 <div class="text-center">
                     <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">Select Method</h3>
                     <p class="text-slate-500 text-sm">Choose how you want to pay for <span id="selected-pkg-name" class="font-bold text-emerald-600"></span></p>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
-                    <button onclick="processOnlinePayment()" class="p-6 bg-slate-900 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                    <?php if ($paystack_active): ?>
+                    <button onclick="payWithPaystack()" class="p-6 bg-slate-900 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
                         <div class="text-left">
-                            <div class="font-black italic uppercase tracking-tight">Online Payment</div>
+                            <div class="font-black italic uppercase tracking-tight">Paystack</div>
                             <div class="text-[10px] opacity-60">Visa, Mastercard, Mobile Money</div>
+                        </div>
+                        <i class="fab fa-paystack text-2xl"></i>
+                    </button>
+                    <?php endif; ?>
+
+                    <?php if ($flutterwave_active): ?>
+                    <button onclick="payWithFlutterwave()" class="p-6 bg-blue-600 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                        <div class="text-left">
+                            <div class="font-black italic uppercase tracking-tight">Flutterwave</div>
+                            <div class="text-[10px] opacity-60">Card, USSD, Bank Transfer</div>
                         </div>
                         <i class="fas fa-credit-card text-2xl"></i>
                     </button>
+                    <?php endif; ?>
+
+                    <?php if ($beewave_active): ?>
+                    <button onclick="payWithBeewave()" class="p-6 bg-amber-500 text-white rounded-[2rem] flex items-center justify-between group hover:bg-emerald-600 transition-all">
+                        <div class="text-left">
+                            <div class="font-black italic uppercase tracking-tight">BeeWave</div>
+                            <div class="text-[10px] opacity-60">Instant Funding</div>
+                        </div>
+                        <i class="fas fa-bolt text-2xl"></i>
+                    </button>
+                    <?php endif; ?>
+
+                    <?php if ($paypal_active): ?>
+                    <div id="paypal-button-container" class="w-full"></div>
+                    <script>
+                        let paypalInitialized = false;
+                        function initPayPal() {
+                            if (paypalInitialized) return;
+                            paypal.Buttons({
+                                createOrder: function(data, actions) {
+                                    return actions.order.create({
+                                        purchase_units: [{
+                                            amount: {
+                                                value: currentSelectedPkg.price_usd
+                                            },
+                                            description: 'SurePredictor Credits: ' + currentSelectedPkg.name
+                                        }]
+                                    });
+                                },
+                                onApprove: function(data, actions) {
+                                    return actions.order.capture().then(function(details) {
+                                        verifyPayPalPayment(data.orderID);
+                                    });
+                                }
+                            }).render('#paypal-button-container');
+                            paypalInitialized = true;
+                        }
+                    </script>
+                    <?php endif; ?>
+
                     <button onclick="showBankTransferUI()" class="p-6 bg-white dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500 transition-all">
                         <div class="text-left">
                             <div class="font-black italic uppercase tracking-tight text-slate-900 dark:text-white">Bank Transfer</div>
@@ -203,6 +263,14 @@
         window.addEventListener('load', () => {
             updateUIForVisitor();
         });
+    }
+
+    function sanitizePhone(p) {
+        if (!p) return "";
+        let clean = p.toString().replace(/\D/g, '');
+        if (clean.startsWith('234') && clean.length > 10) clean = '0' + clean.substring(3);
+        if (clean.length > 11) clean = clean.slice(-11);
+        return clean;
     }
 
     // Visitor Logic
@@ -359,20 +427,32 @@
 
     function initiatePayment(pkg) {
         currentSelectedPkg = pkg;
-        if (activeVisitor) {
-            submitContactInfo(activeVisitor.email, activeVisitor.phone);
+        const cleanPhone = activeVisitor ? sanitizePhone(activeVisitor.phone) : "";
+
+        if (activeVisitor && activeVisitor.email && cleanPhone.length === 11) {
+            submitContactInfo(activeVisitor.email, cleanPhone);
         } else {
             hideAllSteps();
+            if (activeVisitor) {
+                document.getElementById('purchase-email').value = activeVisitor.email || '';
+                document.getElementById('purchase-phone').value = cleanPhone || '';
+            }
             document.getElementById('contact-step').classList.remove('hidden');
         }
     }
 
     function submitContactInfo(email = null, phone = null) {
         const e = email || document.getElementById('purchase-email').value;
-        const p = phone || document.getElementById('purchase-phone').value;
+        const p_raw = phone || document.getElementById('purchase-phone').value;
+        const p = sanitizePhone(p_raw);
 
         if (!e || !p) {
             alert("Please provide both email and phone number.");
+            return;
+        }
+
+        if (p.length !== 11) {
+            alert("Please provide a valid 11-digit phone number.");
             return;
         }
 
@@ -397,61 +477,148 @@
         hideAllSteps();
         document.getElementById('selected-pkg-name').innerText = currentSelectedPkg.name + ' ($' + currentSelectedPkg.price_usd + ')';
         document.getElementById('payment-method-step').classList.remove('hidden');
-    }
-
-    function processOnlinePayment() {
-        const provider = "<?php echo ($settings['primary_currency'] == 'NGN') ? 'paystack' : 'flutterwave'; ?>";
-        if (provider === 'paystack') {
-            payWithPaystack();
-        } else {
-            payWithFlutterwave();
+        if (typeof initPayPal === 'function') {
+            initPayPal();
         }
     }
 
+    function payWithBeewave() {
+        const amount_ngn = currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?>;
+        const cleanPhone = sanitizePhone(currentOrder.phone);
+
+        const formData = new FormData();
+        formData.append('v_id', currentOrder.visitor_id);
+        formData.append('package_id', currentSelectedPkg.id);
+        formData.append('gateway', 'beewave');
+        formData.append('amount', amount_ngn);
+        formData.append('currency', 'NGN');
+        formData.append('email', currentOrder.email);
+        formData.append('phone', cleanPhone);
+
+        fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    BeefinanceCheckout.open({
+                        accessKey: '<?php echo $settings['beewave_access_key']; ?>',
+                        name: activeVisitor ? (activeVisitor.full_name || activeVisitor.username) : 'Visitor ' + currentOrder.user_id,
+                        email: currentOrder.email,
+                        phone: cleanPhone,
+                        amount: amount_ngn,
+                        reference: data.ref,
+                        transaction_ref: data.ref,
+                        onclose: function () {
+                            console.log("BeeWave Checkout closed");
+                            alert("If your payment was successful, your credits will be updated shortly.");
+                        }
+                    });
+                } else {
+                    alert(data.message);
+                }
+            });
+    }
+
+    function verifyPayPalPayment(orderID) {
+        fetch(`/api/payment?action=verify_paypal&orderID=${orderID}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}`)
+            .then(res => res.json()).then(d => {
+                if (d.success) {
+                    localStorage.setItem('visitor_id', currentOrder.user_id);
+                    const creditsAdded = currentSelectedPkg.credits;
+                    const newBalance = d.new_balance;
+                    window.location.href = `dashboard.php?msg=payment_success&added=${creditsAdded}&bal=${newBalance}`;
+                } else {
+                    alert(d.message);
+                }
+            });
+    }
+
     function payWithPaystack() {
-        const handler = PaystackPop.setup({
-            key: '<?php echo $settings['paystack_public_key']; ?>',
-            email: currentOrder.email || (activeVisitor ? activeVisitor.email : document.getElementById('purchase-email').value),
-            amount: currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?> * 100,
-            currency: 'NGN',
-            ref: 'SP_' + Math.floor((Math.random() * 1000000000) + 1),
-            callback: function(response){
-                verifyPayment(response.reference, 'paystack');
-            }
-        });
-        handler.openIframe();
+        const amount_ngn = currentSelectedPkg.price_usd * <?php echo $settings['conversion_rate_ngn']; ?>;
+        const cleanPhone = sanitizePhone(currentOrder.phone);
+
+        const formData = new FormData();
+        formData.append('v_id', currentOrder.visitor_id);
+        formData.append('package_id', currentSelectedPkg.id);
+        formData.append('gateway', 'paystack');
+        formData.append('amount', amount_ngn);
+        formData.append('currency', 'NGN');
+        formData.append('email', currentOrder.email);
+        formData.append('phone', cleanPhone);
+
+        fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const handler = PaystackPop.setup({
+                        key: '<?php echo $settings['paystack_public_key']; ?>',
+                        email: currentOrder.email,
+                        amount: amount_ngn * 100,
+                        currency: 'NGN',
+                        ref: data.ref,
+                        callback: function(response){
+                            verifyPayment(response.reference, 'paystack');
+                        }
+                    });
+                    handler.openIframe();
+                } else {
+                    alert(data.message);
+                }
+            });
     }
 
     function payWithFlutterwave() {
-        FlutterwaveCheckout({
-            public_key: '<?php echo $settings['flutterwave_public_key']; ?>',
-            tx_ref: 'SP_' + Math.floor((Math.random() * 1000000000) + 1),
-            amount: currentSelectedPkg.price_usd,
-            currency: 'USD',
-            payment_options: 'card,mobilemoney,ussd',
-            customer: {
-                email: currentOrder.email || (activeVisitor ? activeVisitor.email : document.getElementById('purchase-email').value),
-                phone_number: currentOrder.phone || (activeVisitor ? activeVisitor.phone : document.getElementById('purchase-phone').value),
-                name: 'Visitor ' + currentOrder.user_id,
-            },
-            callback: function (data) {
-                verifyPayment(data.transaction_id, 'flutterwave');
-            },
-            customizations: {
-                title: 'SurePredictor Credits',
-                description: 'Payment for ' + currentSelectedPkg.name,
-                logo: '<?php echo $settings['site_logo']; ?>',
-            },
-        });
+        const amount_usd = currentSelectedPkg.price_usd;
+        const cleanPhone = sanitizePhone(currentOrder.phone);
+
+        const formData = new FormData();
+        formData.append('v_id', currentOrder.visitor_id);
+        formData.append('package_id', currentSelectedPkg.id);
+        formData.append('gateway', 'flutterwave');
+        formData.append('amount', amount_usd);
+        formData.append('currency', 'USD');
+        formData.append('email', currentOrder.email);
+        formData.append('phone', cleanPhone);
+
+        fetch('/api/payment?action=initiate_transaction', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    FlutterwaveCheckout({
+                        public_key: '<?php echo $settings['flutterwave_public_key']; ?>',
+                        tx_ref: data.ref,
+                        amount: amount_usd,
+                        currency: 'USD',
+                        payment_options: 'card,mobilemoney,ussd',
+                        customer: {
+                            email: currentOrder.email,
+                            phone_number: cleanPhone,
+                            name: activeVisitor ? (activeVisitor.full_name || activeVisitor.username) : 'Visitor ' + currentOrder.user_id,
+                        },
+                        callback: function (response) {
+                            verifyPayment(response.transaction_id, 'flutterwave');
+                        },
+                        customizations: {
+                            title: 'SurePredictor Credits',
+                            description: 'Payment for ' + currentSelectedPkg.name,
+                            logo: '<?php echo $settings['site_logo']; ?>',
+                        },
+                    });
+                } else {
+                    alert(data.message);
+                }
+            });
     }
 
     function verifyPayment(ref, provider) {
         fetch(`/api/payment?action=verify_payment&ref=${ref}&v_id=${currentOrder.visitor_id}&pkg_id=${currentSelectedPkg.id}&provider=${provider}`)
             .then(res => res.json()).then(d => {
-                alert(d.message);
                 if (d.success) {
                     localStorage.setItem('visitor_id', currentOrder.user_id);
-                    location.reload();
+                    const creditsAdded = currentSelectedPkg.credits;
+                    const newBalance = d.new_balance;
+                    window.location.href = `dashboard.php?msg=payment_success&added=${creditsAdded}&bal=${newBalance}`;
+                } else {
+                    alert(d.message);
                 }
             });
     }

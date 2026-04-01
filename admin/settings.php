@@ -26,6 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $paystack_secret_key = $_POST['paystack_secret_key'] ?? '';
     $flutterwave_public_key = $_POST['flutterwave_public_key'] ?? '';
     $flutterwave_secret_key = $_POST['flutterwave_secret_key'] ?? '';
+    $beewave_access_key = $_POST['beewave_access_key'] ?? '';
+    $paypal_client_id = $_POST['paypal_client_id'] ?? '';
+    $paypal_secret_key = $_POST['paypal_secret_key'] ?? '';
+    $paypal_mode = $_POST['paypal_mode'] ?? 'sandbox';
     $primary_currency = $_POST['primary_currency'] ?? 'USD';
     $conversion_rate_ngn = $_POST['conversion_rate_ngn'] ?? 1500;
     $conversion_rate_kes = $_POST['conversion_rate_kes'] ?? 130;
@@ -67,12 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $stmt = $conn->prepare("UPDATE settings SET site_name=?, site_description=?, gemini_api_key=?, footer_text=?, contact_email=?, site_logo=?, site_icon=?, gemini_model_prediction=?, gemini_model_suggestion=?, ai_provider=?, deepseek_api_key=?, deepseek_model_prediction=?, deepseek_model_suggestion=?, deepseek_base_url=?, free_limit=?, prediction_charge=?, whatsapp_number=?, whatsapp_text=?, paystack_public_key=?, paystack_secret_key=?, flutterwave_public_key=?, flutterwave_secret_key=?, primary_currency=?, conversion_rate_ngn=?, conversion_rate_kes=?, bank_details_ngn=?, bank_details_kes=?, ad_expiry_date=?, news_enabled=?, history_enabled=? WHERE id = 1");
+    $stmt = $conn->prepare("UPDATE settings SET site_name=?, site_description=?, gemini_api_key=?, footer_text=?, contact_email=?, site_logo=?, site_icon=?, gemini_model_prediction=?, gemini_model_suggestion=?, ai_provider=?, deepseek_api_key=?, deepseek_model_prediction=?, deepseek_model_suggestion=?, deepseek_base_url=?, free_limit=?, prediction_charge=?, whatsapp_number=?, whatsapp_text=?, paystack_public_key=?, paystack_secret_key=?, flutterwave_public_key=?, flutterwave_secret_key=?, primary_currency=?, conversion_rate_ngn=?, conversion_rate_kes=?, bank_details_ngn=?, bank_details_kes=?, ad_expiry_date=?, news_enabled=?, history_enabled=?, beewave_access_key=?, paypal_client_id=?, paypal_secret_key=?, paypal_mode=? WHERE id = 1");
     if (!$stmt) {
         die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
     }
 
-    $stmt->bind_param("ssssssssssssssisssssssssssssii", $site_name, $site_description, $gemini_api_key, $footer_text, $contact_email, $site_logo, $site_icon, $gemini_model_prediction, $gemini_model_suggestion, $ai_provider, $deepseek_api_key, $deepseek_model_prediction, $deepseek_model_suggestion, $deepseek_base_url, $free_limit, $prediction_charge, $whatsapp_number, $whatsapp_text, $paystack_public_key, $paystack_secret_key, $flutterwave_public_key, $flutterwave_secret_key, $primary_currency, $conversion_rate_ngn, $conversion_rate_kes, $bank_details_ngn, $bank_details_kes, $ad_expiry_date, $news_enabled, $history_enabled);
+    $stmt->bind_param("ssssssssssssssisssssssssssssiissss", $site_name, $site_description, $gemini_api_key, $footer_text, $contact_email, $site_logo, $site_icon, $gemini_model_prediction, $gemini_model_suggestion, $ai_provider, $deepseek_api_key, $deepseek_model_prediction, $deepseek_model_suggestion, $deepseek_base_url, $free_limit, $prediction_charge, $whatsapp_number, $whatsapp_text, $paystack_public_key, $paystack_secret_key, $flutterwave_public_key, $flutterwave_secret_key, $primary_currency, $conversion_rate_ngn, $conversion_rate_kes, $bank_details_ngn, $bank_details_kes, $ad_expiry_date, $news_enabled, $history_enabled, $beewave_access_key, $paypal_client_id, $paypal_secret_key, $paypal_mode);
 
     if ($stmt->execute()) $success = "Settings updated successfully!";
     else $error = "Error updating settings: " . $conn->error;
@@ -203,6 +207,47 @@ require_once 'header.php';
                     <input type="text" name="flutterwave_public_key" value="<?php echo $settings['flutterwave_public_key']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="Flutterwave Public">
                     <input type="password" name="flutterwave_secret_key" value="<?php echo $settings['flutterwave_secret_key']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="Flutterwave Secret">
                 </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest">BeeWave Integration</h4>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">BeeWave Access Key</label>
+                            <input type="text" name="beewave_access_key" value="<?php echo $settings['beewave_access_key']; ?>" class="w-full bg-white border border-slate-200 rounded-xl py-3 px-4" placeholder="BeeWave Access Key">
+                        </div>
+                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-xl">
+                        <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">BeeWave Webhook URL</p>
+                        <div class="flex items-center gap-3">
+                            <input type="text" readonly value="<?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/api/beewave_webhook.php'; ?>" id="beewave-webhook-url" class="flex-1 bg-white border border-amber-200 rounded-lg py-2 px-3 text-xs font-mono text-slate-600 outline-none">
+                            <button type="button" onclick="copyWebhookUrl(this)" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all flex items-center gap-2">
+                                <i class="fas fa-copy"></i>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100 space-y-4">
+                        <h4 class="text-xs font-black text-blue-400 uppercase tracking-widest">PayPal Integration</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-[10px] font-bold text-blue-500 uppercase tracking-widest ml-1">Client ID</label>
+                                <input type="text" name="paypal_client_id" value="<?php echo $settings['paypal_client_id']; ?>" class="w-full bg-white border border-blue-200 rounded-xl py-3 px-4" placeholder="PayPal Client ID">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-[10px] font-bold text-blue-500 uppercase tracking-widest ml-1">Secret Key</label>
+                                <input type="password" name="paypal_secret_key" value="<?php echo $settings['paypal_secret_key']; ?>" class="w-full bg-white border border-blue-200 rounded-xl py-3 px-4" placeholder="PayPal Secret Key">
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-bold text-blue-500 uppercase tracking-widest ml-1">Mode</label>
+                            <select id="paypal_mode" name="paypal_mode" class="w-full bg-white border border-blue-200 rounded-xl py-3 px-4">
+                                <option value="sandbox" <?php echo $settings['paypal_mode'] == 'sandbox' ? 'selected' : ''; ?>>Sandbox</option>
+                                <option value="live" <?php echo $settings['paypal_mode'] == 'live' ? 'selected' : ''; ?>>Live</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="testPayPalConnection()" class="text-xs font-bold text-blue-600 underline">Test PayPal Connection</button>
+                    </div>
+                </div>
                 <div class="grid grid-cols-3 gap-4">
                     <select name="primary_currency" class="bg-slate-50 border border-slate-200 rounded-xl py-3 px-4"><option value="USD" <?php echo $settings['primary_currency'] == 'USD' ? 'selected' : ''; ?>>USD</option><option value="NGN" <?php echo $settings['primary_currency'] == 'NGN' ? 'selected' : ''; ?>>NGN</option></select>
                     <input type="number" step="0.01" name="conversion_rate_ngn" value="<?php echo $settings['conversion_rate_ngn']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="USD to NGN">
@@ -245,6 +290,16 @@ require_once 'header.php';
                 <p>2. Create key and <b>add balance</b> (min $5).</p>
                 <p>3. DeepSeek is a <b>paid</b> service.</p>
             </div>
+            <div class="mt-8 pt-8 border-t border-slate-100">
+                <h3 class="font-black mb-4 text-sm uppercase tracking-widest text-slate-400">PayPal Setup</h3>
+                <div class="space-y-4 text-xs text-slate-500 leading-relaxed">
+                    <p>1. Log in to <b>developer.paypal.com</b></p>
+                    <p>2. Go to <b>Apps & Credentials</b>.</p>
+                    <p>3. Create a <b>REST API App</b>.</p>
+                    <p>4. Copy the <b>Client ID</b> and <b>Secret</b>.</p>
+                    <p>5. Toggle between <b>Sandbox</b> (testing) and <b>Live</b> modes.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -285,6 +340,44 @@ function testAIConnection(p) {
 
     fetch(`../api/test_ai`, { method: 'POST', body: fd })
         .then(r => r.json()).then(d => { alert(`[${p.toUpperCase()}] ${d.message}`); btn.innerText = 'Test ' + p; });
+}
+function testPayPalConnection() {
+    const clientId = document.querySelector('input[name="paypal_client_id"]').value;
+    const secret = document.querySelector('input[name="paypal_secret_key"]').value;
+    const mode = document.getElementById('paypal_mode').value;
+    const btn = event.target;
+
+    if (!clientId || !secret) {
+        alert("Please enter both Client ID and Secret Key first.");
+        return;
+    }
+
+    btn.innerText = 'Testing...';
+    const fd = new FormData();
+    fd.append('client_id', clientId);
+    fd.append('secret', secret);
+    fd.append('mode', mode);
+
+    fetch(`../api/test_paypal`, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+            alert(`[PAYPAL] ${d.message}`);
+            btn.innerText = 'Test PayPal Connection';
+        })
+        .catch(err => {
+            alert("Error connecting to test script.");
+            btn.innerText = 'Test PayPal Connection';
+        });
+}
+function copyWebhookUrl(btn) {
+    const copyText = document.getElementById("beewave-webhook-url");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> <span>Copied!</span>';
+    setTimeout(() => { btn.innerHTML = originalText; }, 2000);
 }
 </script>
 <?php require_once 'footer.php'; ?>

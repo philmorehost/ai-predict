@@ -38,7 +38,13 @@ if ($action === 'create_order') {
         $user_id = $visitor['user_id'];
     }
 
-    echo json_encode(['success' => true, 'visitor_id' => $v_id, 'user_id' => $user_id]);
+    echo json_encode([
+        'success' => true,
+        'visitor_id' => $v_id,
+        'user_id' => $user_id,
+        'email' => $email,
+        'phone' => $phone
+    ]);
 }
 
 if ($action === 'bank_transfer') {
@@ -76,6 +82,27 @@ if ($action === 'bank_transfer') {
     }
 }
 
+if ($action === 'initiate_transaction') {
+    $v_id = (int)$_POST['v_id'];
+    $pkg_id = (int)$_POST['package_id'];
+    $gateway = $_POST['gateway'];
+    $amount = $_POST['amount'];
+    $currency = $_POST['currency'];
+    $email = $_POST['email'] ?? '';
+    $phone = $_POST['phone'] ?? '';
+
+    $ref = strtoupper($gateway[0]) . '_' . bin2hex(random_bytes(8));
+
+    $stmt = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("iisdssss", $v_id, $pkg_id, $ref, $amount, $currency, $gateway, $email, $phone);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'ref' => $ref]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to initiate transaction.']);
+    }
+}
+
 if ($action === 'verify_payment') {
     $ref = $_GET['ref'] ?? '';
     $v_id = (int)$_GET['v_id'];
@@ -86,6 +113,7 @@ if ($action === 'verify_payment') {
     $verified = false;
 
     // Server-side verification with Secret Keys
+    $merchant_ref = $ref;
     if ($provider === 'paystack') {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . rawurlencode($ref));
@@ -93,7 +121,10 @@ if ($action === 'verify_payment') {
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer " . $settings['paystack_secret_key']]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
-        if ($response && $response['status'] && $response['data']['status'] === 'success') $verified = true;
+        if ($response && $response['status'] && $response['data']['status'] === 'success') {
+            $verified = true;
+            $merchant_ref = $response['data']['reference'];
+        }
     } elseif ($provider === 'flutterwave') {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "https://api.flutterwave.com/v3/transactions/" . rawurlencode($ref) . "/verify");
@@ -101,7 +132,10 @@ if ($action === 'verify_payment') {
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer " . $settings['flutterwave_secret_key'], "Content-Type: application/json"]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
-        if ($response && $response['status'] === 'success' && $response['data']['status'] === 'successful') $verified = true;
+        if ($response && $response['status'] === 'success' && $response['data']['status'] === 'successful') {
+            $verified = true;
+            $merchant_ref = $response['data']['tx_ref'];
+        }
     }
 
     if (!$verified) {
@@ -115,10 +149,97 @@ if ($action === 'verify_payment') {
     $pkg = $pkg_stmt->get_result()->fetch_assoc();
 
     if ($pkg) {
-        $conn->query("UPDATE visitors SET credits = credits + {$pkg['credits']} WHERE id = $v_id");
-        echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.']);
+        $conn->begin_transaction();
+        try {
+            $conn->query("UPDATE visitors SET credits = credits + {$pkg['credits']} WHERE id = $v_id");
+
+            // Get new balance
+            $res = $conn->query("SELECT credits FROM visitors WHERE id = $v_id");
+            $new_balance = $res->fetch_assoc()['credits'];
+
+            $stmt_ot = $conn->prepare("UPDATE online_transactions SET status = 'success', is_disputed = 0, api_ref = ? WHERE transaction_ref = ?");
+            $stmt_ot->bind_param("ss", $ref, $merchant_ref);
+            $stmt_ot->execute();
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.', 'new_balance' => $new_balance]);
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'message' => 'Failed to update transaction status.']);
+        }
     } else {
         echo json_encode(['success' => false, 'message' => 'Verification failed.']);
+    }
+}
+
+if ($action === 'verify_paypal') {
+    $orderID = $_GET['orderID'] ?? '';
+    $v_id = (int)$_GET['v_id'];
+    $pkg_id = (int)$_GET['pkg_id'];
+
+    $settings = getSettings($conn);
+    $verified = false;
+
+    $api_url = $settings['paypal_mode'] === 'live' ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+
+    // Get Access Token
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "$api_url/v1/oauth2/token");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=client_credentials");
+    curl_setopt($ch, CURLOPT_USERPWD, $settings['paypal_client_id'] . ":" . $settings['paypal_secret_key']);
+    $token_res = json_decode(curl_exec($ch), true);
+    curl_close($ch);
+
+    if (isset($token_res['access_token'])) {
+        $access_token = $token_res['access_token'];
+
+        // Verify Order
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$api_url/v2/checkout/orders/$orderID");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $access_token", "Content-Type: application/json"]);
+        $order_res = json_decode(curl_exec($ch), true);
+        curl_close($ch);
+
+        if ($order_res && $order_res['status'] === 'COMPLETED') {
+            $verified = true;
+        }
+    }
+
+    if (!$verified) {
+        echo json_encode(['success' => false, 'message' => 'PayPal payment verification failed.']);
+        exit;
+    }
+
+    $pkg_stmt = $conn->prepare("SELECT credits FROM credit_packages WHERE id = ?");
+    $pkg_stmt->bind_param("i", $pkg_id);
+    $pkg_stmt->execute();
+    $pkg = $pkg_stmt->get_result()->fetch_assoc();
+
+    if ($pkg) {
+        $conn->begin_transaction();
+        try {
+            $conn->query("UPDATE visitors SET credits = credits + {$pkg['credits']} WHERE id = $v_id");
+
+            // Get new balance
+            $res = $conn->query("SELECT credits FROM visitors WHERE id = $v_id");
+            $new_balance = $res->fetch_assoc()['credits'];
+
+            // Log transaction
+            $stmt_ot = $conn->prepare("INSERT INTO online_transactions (visitor_id, package_id, transaction_ref, amount, currency, gateway, status, api_ref) VALUES (?, ?, ?, ?, 'USD', 'paypal', 'success', ?)");
+            $amount = $pkg['price_usd'];
+            $stmt_ot->bind_param("iisds", $v_id, $pkg_id, $orderID, $amount, $orderID);
+            $stmt_ot->execute();
+
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Payment successful! Credits added.', 'new_balance' => $new_balance]);
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'message' => 'Failed to process payment.']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Package not found.']);
     }
 }
 ?>
