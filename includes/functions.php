@@ -48,7 +48,10 @@ function getCurrentSeasonRange() {
 }
 
 function sanitize($input) {
-    return htmlspecialchars(strip_tags(trim($input)));
+    if (is_array($input)) {
+        return array_map('sanitize', $input);
+    }
+    return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
 }
 
 function ensureDatabaseTablesExist($conn) {

@@ -6,10 +6,11 @@ require_once '../includes/UsageTracker.php';
 header('Content-Type: application/json');
 
 $action = $_GET['action'] ?? '';
+UsageTracker::enforceRateLimit($conn, 'payment_api', 30); // 30 requests per IP per day for payment API
 
 if ($action === 'create_order') {
-    $email = $_POST['email'] ?? '';
-    $phone = $_POST['phone'] ?? '';
+    $email = sanitize($_POST['email'] ?? '');
+    $phone = sanitize($_POST['phone'] ?? '');
     $package_id = (int)$_POST['package_id'];
     $fingerprint = UsageTracker::getVisitorIdentifier();
     $ip = $_SERVER['REMOTE_ADDR'];
@@ -85,11 +86,11 @@ if ($action === 'bank_transfer') {
 if ($action === 'initiate_transaction') {
     $v_id = (int)$_POST['v_id'];
     $pkg_id = (int)$_POST['package_id'];
-    $gateway = $_POST['gateway'];
-    $amount = $_POST['amount'];
-    $currency = $_POST['currency'];
-    $email = $_POST['email'] ?? '';
-    $phone = $_POST['phone'] ?? '';
+    $gateway = sanitize($_POST['gateway'] ?? '');
+    $amount = (float)$_POST['amount'];
+    $currency = sanitize($_POST['currency'] ?? 'USD');
+    $email = sanitize($_POST['email'] ?? '');
+    $phone = sanitize($_POST['phone'] ?? '');
 
     $ref = strtoupper($gateway[0]) . '_' . bin2hex(random_bytes(8));
     if ($gateway === 'payhub') $ref = 'PH_' . bin2hex(random_bytes(8));
@@ -105,8 +106,20 @@ if ($action === 'initiate_transaction') {
 }
 
 if ($action === 'verify_payment') {
-    $ref = $_GET['ref'] ?? '';
+    $ref = sanitize($_GET['ref'] ?? '');
     $v_id = (int)$_GET['v_id'];
+
+    // Role-level security: Ensure only the authenticated user can verify their own payment
+    if (isset($_SESSION['user_id'])) {
+        $check_v = $conn->prepare("SELECT id FROM visitors WHERE user_id = ?");
+        $check_v->bind_param("s", $_SESSION['user_id']);
+        $check_v->execute();
+        $real_v = $check_v->get_result()->fetch_assoc();
+        if (!$real_v || $real_v['id'] !== $v_id) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
+            exit;
+        }
+    }
     $pkg_id = (int)$_GET['pkg_id'];
     $provider = $_GET['provider'] ?? '';
 
