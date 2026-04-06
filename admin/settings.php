@@ -38,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ad_expiry_date = $_POST['ad_expiry_date'] ?: null;
     $news_enabled = isset($_POST['news_enabled']) ? 1 : 0;
     $history_enabled = isset($_POST['history_enabled']) ? 1 : 0;
+    $payhub_public_key = $_POST['payhub_public_key'] ?? '';
+    $payhub_secret_key = $_POST['payhub_secret_key'] ?? '';
+    $custom_header_code = $_POST['custom_header_code'] ?? '';
 
     $target_dir = "../assets/img/";
     if (!file_exists($target_dir)) mkdir($target_dir, 0755, true);
@@ -71,12 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $stmt = $conn->prepare("UPDATE settings SET site_name=?, site_description=?, gemini_api_key=?, footer_text=?, contact_email=?, site_logo=?, site_icon=?, gemini_model_prediction=?, gemini_model_suggestion=?, ai_provider=?, deepseek_api_key=?, deepseek_model_prediction=?, deepseek_model_suggestion=?, deepseek_base_url=?, free_limit=?, prediction_charge=?, whatsapp_number=?, whatsapp_text=?, paystack_public_key=?, paystack_secret_key=?, flutterwave_public_key=?, flutterwave_secret_key=?, primary_currency=?, conversion_rate_ngn=?, conversion_rate_kes=?, bank_details_ngn=?, bank_details_kes=?, ad_expiry_date=?, news_enabled=?, history_enabled=?, beewave_access_key=?, paypal_client_id=?, paypal_secret_key=?, paypal_mode=? WHERE id = 1");
+    $stmt = $conn->prepare("UPDATE settings SET site_name=?, site_description=?, gemini_api_key=?, footer_text=?, contact_email=?, site_logo=?, site_icon=?, gemini_model_prediction=?, gemini_model_suggestion=?, ai_provider=?, deepseek_api_key=?, deepseek_model_prediction=?, deepseek_model_suggestion=?, deepseek_base_url=?, free_limit=?, prediction_charge=?, whatsapp_number=?, whatsapp_text=?, paystack_public_key=?, paystack_secret_key=?, flutterwave_public_key=?, flutterwave_secret_key=?, primary_currency=?, conversion_rate_ngn=?, conversion_rate_kes=?, bank_details_ngn=?, bank_details_kes=?, ad_expiry_date=?, news_enabled=?, history_enabled=?, beewave_access_key=?, paypal_client_id=?, paypal_secret_key=?, paypal_mode=?, payhub_public_key=?, payhub_secret_key=?, custom_header_code=? WHERE id = 1");
     if (!$stmt) {
         die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
     }
 
-    $stmt->bind_param("ssssssssssssssisssssssssssssiissss", $site_name, $site_description, $gemini_api_key, $footer_text, $contact_email, $site_logo, $site_icon, $gemini_model_prediction, $gemini_model_suggestion, $ai_provider, $deepseek_api_key, $deepseek_model_prediction, $deepseek_model_suggestion, $deepseek_base_url, $free_limit, $prediction_charge, $whatsapp_number, $whatsapp_text, $paystack_public_key, $paystack_secret_key, $flutterwave_public_key, $flutterwave_secret_key, $primary_currency, $conversion_rate_ngn, $conversion_rate_kes, $bank_details_ngn, $bank_details_kes, $ad_expiry_date, $news_enabled, $history_enabled, $beewave_access_key, $paypal_client_id, $paypal_secret_key, $paypal_mode);
+    $stmt->bind_param("ssssssssssssssisssssssssssssiisssssss", $site_name, $site_description, $gemini_api_key, $footer_text, $contact_email, $site_logo, $site_icon, $gemini_model_prediction, $gemini_model_suggestion, $ai_provider, $deepseek_api_key, $deepseek_model_prediction, $deepseek_model_suggestion, $deepseek_base_url, $free_limit, $prediction_charge, $whatsapp_number, $whatsapp_text, $paystack_public_key, $paystack_secret_key, $flutterwave_public_key, $flutterwave_secret_key, $primary_currency, $conversion_rate_ngn, $conversion_rate_kes, $bank_details_ngn, $bank_details_kes, $ad_expiry_date, $news_enabled, $history_enabled, $beewave_access_key, $paypal_client_id, $paypal_secret_key, $paypal_mode, $payhub_public_key, $payhub_secret_key, $custom_header_code);
 
     if ($stmt->execute()) $success = "Settings updated successfully!";
     else $error = "Error updating settings: " . $conn->error;
@@ -105,6 +108,7 @@ require_once 'header.php';
                 <div><label class="block text-xs font-black text-slate-400 uppercase mb-2">Site Name</label><input type="text" name="site_name" value="<?php echo $settings['site_name']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6"></div>
                 <div><label class="block text-xs font-black text-slate-400 uppercase mb-2">Site Description</label><textarea name="site_description" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6"><?php echo $settings['site_description']; ?></textarea></div>
                 <div><label class="block text-xs font-black text-slate-400 uppercase mb-2">Contact Email</label><input type="email" name="contact_email" value="<?php echo $settings['contact_email']; ?>" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6"></div>
+                <div><label class="block text-xs font-black text-slate-400 uppercase mb-2">Custom Header Code</label><textarea name="custom_header_code" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6" placeholder="Paste tracking codes or custom scripts here..."><?php echo htmlspecialchars($settings['custom_header_code']); ?></textarea></div>
 
                 <div class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <input type="checkbox" name="news_enabled" id="news_enabled" value="1" <?php echo $settings['news_enabled'] ? 'checked' : ''; ?> class="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
@@ -218,12 +222,36 @@ require_once 'header.php';
                         <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">BeeWave Webhook URL</p>
                         <div class="flex items-center gap-3">
                             <input type="text" readonly value="<?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/api/beewave_webhook.php'; ?>" id="beewave-webhook-url" class="flex-1 bg-white border border-amber-200 rounded-lg py-2 px-3 text-xs font-mono text-slate-600 outline-none">
-                            <button type="button" onclick="copyWebhookUrl(this)" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all flex items-center gap-2">
+                            <button type="button" onclick="copyWebhookUrl(this, 'beewave')" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all flex items-center gap-2">
                                 <i class="fas fa-copy"></i>
                                 <span>Copy</span>
                             </button>
                         </div>
                     </div>
+                    </div>
+
+                    <div class="p-6 bg-purple-50 rounded-2xl border border-purple-100 space-y-4">
+                        <h4 class="text-xs font-black text-purple-400 uppercase tracking-widest">PayHub Integration</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-[10px] font-bold text-purple-500 uppercase tracking-widest ml-1">Public Key</label>
+                                <input type="text" name="payhub_public_key" value="<?php echo $settings['payhub_public_key']; ?>" class="w-full bg-white border border-purple-200 rounded-xl py-3 px-4" placeholder="PayHub Public Key">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-[10px] font-bold text-purple-500 uppercase tracking-widest ml-1">Secret Key</label>
+                                <input type="password" name="payhub_secret_key" value="<?php echo $settings['payhub_secret_key']; ?>" class="w-full bg-white border border-purple-200 rounded-xl py-3 px-4" placeholder="PayHub Secret Key">
+                            </div>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-100 p-4 rounded-xl">
+                            <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">PayHub Webhook URL</p>
+                            <div class="flex items-center gap-3">
+                                <input type="text" readonly value="<?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/api/payhub_webhook.php'; ?>" id="payhub-webhook-url" class="flex-1 bg-white border border-amber-200 rounded-lg py-2 px-3 text-xs font-mono text-slate-600 outline-none">
+                                <button type="button" onclick="copyWebhookUrl(this, 'payhub')" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all flex items-center gap-2">
+                                    <i class="fas fa-copy"></i>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100 space-y-4">
@@ -369,8 +397,8 @@ function testPayPalConnection() {
             btn.innerText = 'Test PayPal Connection';
         });
 }
-function copyWebhookUrl(btn) {
-    const copyText = document.getElementById("beewave-webhook-url");
+function copyWebhookUrl(btn, provider = 'beewave') {
+    const copyText = document.getElementById(provider + "-webhook-url");
     copyText.select();
     copyText.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(copyText.value);
